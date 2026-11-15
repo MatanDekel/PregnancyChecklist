@@ -253,6 +253,9 @@ dialog::backdrop{background:rgba(45,28,50,.45)}
 .sh2{font-family:var(--display);font-size:1.15rem;margin:26px 0 6px;display:flex;justify-content:space-between;align-items:center;gap:8px}
 .namesrow{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
 .namesrow input{flex:1;min-width:160px}
+.namecard.dim{opacity:.5}
+.nsec{margin-top:16px}
+.dimhead{opacity:.7}
 .namecard{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px 14px;margin:10px 0}
 .nchead{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
 .nchead h3{font-size:1.1rem}
@@ -1314,23 +1317,32 @@ function renderNames(){
   const stars = (v, mine) => [1,2,3,4,5].map(k => mine
     ? `<button type="button" class="star${k<=v?" on":""}" data-rate="${esc(mine)}" data-v="${k}" aria-label="${k} כוכבים" aria-pressed="${k<=v}">★</button>`
     : `<span class="star${k<=v?" on":""}" aria-hidden="true">★</span>`).join("");
-  const cards = sorted.map(n => {
+  const cardOf = (n, dim) => {
     const avg = nameAvg(n), mine = (n.ratings||{})[me.id] || 0;
     const rows = members.map(m => {
       const v = (n.ratings||{})[m.id] || 0;
       return `<div class="rate"><span>${esc(m.name)}${m.id===me.id?" (את/ה)":""}</span><div class="stars">${m.id===me.id ? stars(mine, n.id) : (v ? stars(v) : '<em class="mini">עוד לא דירג/ה</em>')}</div></div>`;
     }).join("");
-    return `<article class="namecard">
+    return `<article class="namecard${dim?" dim":""}">
       <div class="nchead"><div><h3>${esc(n.name)}</h3><span class="mini">הציע/ה: ${esc(nameOf(n.byId) || n.by || "")}</span></div>
         <div class="navg">${avg ? avg.toFixed(1) + " ★" : "בלי דירוג"}</div></div>
       ${rows}
       <button class="link" type="button" data-name-edit="${esc(n.id)}">עריכת השם / מחיקה</button>
     </article>`;
-  }).join("");
+  };
+  const sex = state.babySex;
+  const groupOf = g => sorted.filter(n => (n.gender||"") === g);
+  const sec = (title, list, dim) => list.length ? `<div class="sh2 nsec${dim?" dimhead":""}"><span>${title} · ${list.length}</span>${dim?'<span class="mini">לא הרשימה הרלוונטית כרגע</span>':""}</div>${list.map(n=>cardOf(n,dim)).join("")}` : "";
+  const girlFirst = sex !== "boy";
+  const first = girlFirst ? "girl" : "boy", second = girlFirst ? "boy" : "girl";
+  const T = { girl: "שמות לבת", boy: "שמות לבן" };
+  const cards = sec(T[first], groupOf(first), false) + sec(T[second], groupOf(second), !!sex)
+    + sec("בלי שיוך לבן או לבת", groupOf(""), false);
   const form = `<form class="panel namesform" data-names-form>
       <h2>הצעת שם</h2>
       <div class="namesrow">
         <input name="n" required maxlength="60" placeholder="שם מוצע" aria-label="שם מוצע">
+        <select name="g" required aria-label="בן או בת">${sortedGenders()}</select>
         <select name="by" aria-label="מי הציע/ה">${members.map(m=>`<option value="${esc(m.id)}" ${m.id===me.id?"selected":""}>${esc(m.name)}</option>`).join("")}</select>
         <button class="btn" type="submit">הוספה</button>
       </div>
@@ -1340,10 +1352,13 @@ function renderNames(){
     ${cards || '<div class="panel"><p>עוד אין שמות. מוסיפים שם למעלה, וכל אחד מדרג/ת לפי הסדר.</p></div>'}
     <p class="hint">כל אחד מדרג/ת לעצמו (1 עד 5 כוכבים). לחיצה חוזרת על אותו כוכב מבטלת את הדירוג.</p>`;
 }
+const sortedGenders = () => `<option value="girl" ${state.babySex==="boy"?"":"selected"}>בת</option><option value="boy" ${state.babySex==="boy"?"selected":""}>בן</option>`;
+const genderSelect = (cur, name) => `<label>בן או בת<select name="${name}"><option value="girl" ${cur==="girl"?"selected":""}>בת</option><option value="boy" ${cur==="boy"?"selected":""}>בן</option></select></label>`;
 async function addName(fd){
   const name = (fd.n||"").trim(); if (!name) return;
+  const gender = fd.g === "boy" ? "boy" : "girl";
   const by = (family && family.members||[]).find(m => m.id === fd.by) || { id: me.id, name: me.name };
-  return write(() => setDoc(doc(db, "families", me.familyId, "names", "n"+uid()), { name, byId: by.id, by: by.name, ratings: {}, createdAt: Date.now() }));
+  return write(() => setDoc(doc(db, "families", me.familyId, "names", "n"+uid()), { name, gender, byId: by.id, by: by.name, ratings: {}, createdAt: Date.now() }));
 }
 function rateName(id, v){
   const n = state.names.find(x => x.id === id); if (!n) return;
@@ -1354,8 +1369,8 @@ function rateName(id, v){
 function openNameDlg(id){
   const n = state.names.find(x => x.id === id); if (!n) return;
   return openDlg({
-    html: `<h2>עריכת שם</h2><label>השם<input name="n" required maxlength="60" value="${esc(n.name)}"></label>`,
-    onSave: fd => { const name = (fd.n||"").trim(); if (name) return write(() => updateDoc(doc(db, "families", me.familyId, "names", id), { name })); },
+    html: `<h2>עריכת שם</h2><label>השם<input name="n" required maxlength="60" value="${esc(n.name)}"></label>${genderSelect(n.gender||"girl","g")}`,
+    onSave: fd => { const name = (fd.n||"").trim(); const gender = fd.g === "boy" ? "boy" : "girl"; if (name) return write(() => updateDoc(doc(db, "families", me.familyId, "names", id), { name, gender })); },
     onDelete: () => write(() => deleteDoc(doc(db, "families", me.familyId, "names", id))),
     delLabel: "מחיקת השם"
   });
@@ -1598,7 +1613,7 @@ function demoSeed(){
   demoStore.set(b+"/data/overrides", { items: { course: { t:"קורס הכנה ללידה בבית החולים", d:"לבדוק תאריכים ולהירשם", w:20 } } });
   demoStore.set(b+"/tasks/t1", { w:22, t:"לבדוק מחירי עגלות בחנויות", d:"", by:"דנה", createdAt:1 });
   demoStore.set(b+"/tasks/t2", { w:24, t:"לתאם סיור בבית החולים", d:"להתקשר ולשאול על ימי סיור", by:"יוני", createdAt:2 });
-  [["n1","נועה","demo",["demo","demo2"]],["n2","תמר","demo2",[]],["n3","אליה","demo",[]]].forEach(([id,name,by,_],i) => demoStore.set(b+"/names/"+id, { name, byId: by, by: by==="demo"?"דנה":"יוני", ratings: i===0 ? { demo:5, demo2:4 } : (i===1 ? { demo:3 } : {}), createdAt:i+1 }));
+  [["n1","נועה","girl","demo"],["n2","תמר","girl","demo2"],["n3","איתי","boy","demo"],["n4","יונתן","boy","demo2"]].forEach(([id,name,g,by],i) => demoStore.set(b+"/names/"+id, { name, gender:g, byId: by, by: by==="demo"?"דנה":"יוני", ratings: i===0 ? { demo:5, demo2:4 } : (i===2 ? { demo:3 } : {}), createdAt:i+1 }));
   [["c1","עגלה וטיולים"],["c2","שינה"],["c3","האכלה והנקה"]].forEach(([id,name],i) => demoStore.set(b+"/shopCats/"+id, { name, createdAt:i+1 }));
   [["p1","עגלה","c1",30],["p2","כיסא בטיחות","c1",32],["p3","מיטת תינוק","c2",28],["p4","משאבת חלב","c3",34]]
     .forEach(([id,name,cat,when],i) => demoStore.set(b+"/shopProds/"+id, { name, cat, when, createdAt:i+1 }));
