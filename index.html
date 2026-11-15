@@ -273,6 +273,11 @@ dialog::backdrop{background:rgba(45,28,50,.45)}
 .tag.no{color:var(--muted);background:var(--bg)}
 .tag.eilat{color:var(--shaban);background:var(--shaban-bg)}
 .dsel{font:inherit;font-size:.9rem;padding:4px 6px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink)}
+
+.demobar{position:sticky;top:0;z-index:30;background:var(--ink);color:var(--bg);display:flex;justify-content:center;align-items:center;gap:12px;padding:6px 12px;min-height:38px;font-size:.9rem}
+.demobar button{font:inherit;font-size:.85rem;font-weight:700;border:1px solid currentColor;background:none;color:inherit;border-radius:999px;padding:2px 12px;cursor:pointer}
+body.demo .status{top:38px}
+body.demo .realonly,body.demo #demoPanel{display:none}
 </style>
 </head>
 <body>
@@ -311,6 +316,7 @@ dialog::backdrop{background:rgba(45,28,50,.45)}
 </div>
 
 <div id="app" class="hidden">
+<div class="demobar hidden" id="demoBar" role="status"><span>מצב הדגמה · נתונים לדוגמה, כלום לא נשמר</span><button type="button" id="demoExit">יציאה מההדגמה</button></div>
 <div class="wrap">
   <nav class="nav" aria-label="ניווט">
     <div class="tabs">
@@ -419,7 +425,7 @@ dialog::backdrop{background:rgba(45,28,50,.45)}
       <ul class="members" id="membersList"></ul>
     </div>
 
-    <div class="panel">
+    <div class="panel realonly">
       <h2>קישור הזמנה</h2>
       <p>שלחי את הקישור לבן הזוג. כשהוא יפתח אותו ויתחבר עם Google, הוא יצטרף למשפחה ויראה את אותה רשימה.</p>
       <div class="linkbox">
@@ -431,7 +437,7 @@ dialog::backdrop{background:rgba(45,28,50,.45)}
       <div class="msg" id="copyMsg"></div>
     </div>
 
-    <div class="panel">
+    <div class="panel realonly">
       <h2>הזמנה לפי אימייל</h2>
       <p>כשהוא יתחבר בפעם הראשונה עם האימייל הזה, הוא יצטרף למשפחה אוטומטית.</p>
       <form class="inviteform" id="inviteForm">
@@ -441,6 +447,12 @@ dialog::backdrop{background:rgba(45,28,50,.45)}
       </form>
       <div class="msg" id="inviteMsg" role="status"></div>
       <ul class="pending" id="pendingList"></ul>
+    </div>
+
+    <div class="panel" id="demoPanel">
+      <h2>מצב הדגמה</h2>
+      <p>פותח גרסה עם נתונים לדוגמה כדי להראות איך האתר עובד. כלום לא נשמר, והנתונים האמיתיים שלכם לא משתנים.</p>
+      <button class="btn ghost" type="button" id="demoBtn">מעבר למצב הדגמה</button>
     </div>
 
     <div class="panel">
@@ -460,8 +472,8 @@ import {
   GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, onAuthStateChanged, signOut
 } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-auth.js";
 import {
-  initializeFirestore, doc, getDoc, setDoc, updateDoc, deleteDoc, collection, query, where,
-  onSnapshot, serverTimestamp, deleteField, arrayUnion, writeBatch
+  initializeFirestore, doc, getDoc, setDoc as _setDoc, updateDoc as _updateDoc, deleteDoc as _deleteDoc, collection, query, where,
+  onSnapshot as _onSnapshot, serverTimestamp, deleteField as _deleteField, arrayUnion, writeBatch as _writeBatch
 } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -483,6 +495,47 @@ const auth = initializeAuth(fbApp, {
 });
 const db = initializeFirestore(fbApp, { experimentalForceLongPolling: true });
 const googleProvider = new GoogleAuthProvider();
+
+// Only these two accounts may use the site (Firestore rules enforce the same list).
+const ALLOWED_EMAILS = ["derhyeden@gmail.com", "mdekel16@gmail.com"];
+let deniedMsg = "";
+
+// ───────────── demo mode: the same app on in-memory sample data, nothing is saved ─────────────
+let DEMO = false;
+const DEL = Symbol("del");
+const demoStore = new Map(), demoListeners = new Set();
+const clone = v => v === undefined ? v : JSON.parse(JSON.stringify(v));
+function mergeInto(t, src){
+  for (const [k, v] of Object.entries(src)) {
+    if (v === DEL) delete t[k];
+    else if (v && typeof v === "object" && !Array.isArray(v)) { if (!t[k] || typeof t[k] !== "object" || Array.isArray(t[k])) t[k] = {}; mergeInto(t[k], v); }
+    else t[k] = clone(v);
+  }
+}
+const demoNotify = path => demoListeners.forEach(l => l.hit(path));
+function demoSet(path, data, opts){ const cur = opts && opts.merge ? (clone(demoStore.get(path)) || {}) : {}; mergeInto(cur, data); demoStore.set(path, cur); demoNotify(path); }
+function demoUpdate(path, data){ const cur = clone(demoStore.get(path)) || {}; Object.entries(data).forEach(([k, v]) => { if (v === DEL) delete cur[k]; else cur[k] = clone(v); }); demoStore.set(path, cur); demoNotify(path); }
+function demoDelete(path){ demoStore.delete(path); demoNotify(path); }
+function demoListen(ref, next){
+  const path = ref.path, isColl = ref.type === "collection", depth = path.split("/").length + 1;
+  const isChild = p => p.startsWith(path + "/") && p.split("/").length === depth;
+  const snap = () => isColl
+    ? { docs: [...demoStore].filter(([p]) => isChild(p)).map(([p, d]) => ({ id: p.split("/").pop(), data: () => clone(d) })) }
+    : { id: path.split("/").pop(), exists: () => demoStore.has(path), data: () => clone(demoStore.get(path)) };
+  const l = { hit: p => { if (p === path || (isColl && isChild(p))) next(snap()); } };
+  demoListeners.add(l); setTimeout(() => next(snap()), 0);
+  return () => demoListeners.delete(l);
+}
+const setDoc = (r, d, o) => DEMO ? Promise.resolve(demoSet(r.path, d, o)) : _setDoc(r, d, o);
+const updateDoc = (r, d) => DEMO ? Promise.resolve(demoUpdate(r.path, d)) : _updateDoc(r, d);
+const deleteDoc = r => DEMO ? Promise.resolve(demoDelete(r.path)) : _deleteDoc(r);
+const deleteField = () => DEMO ? DEL : _deleteField();
+const onSnapshot = (r, next, err) => (DEMO && r.type !== "query") ? demoListen(r, next) : _onSnapshot(r, next, err);
+const writeBatch = d => {
+  if (!DEMO) return _writeBatch(d);
+  const ops = [];
+  return { set: (r, x) => ops.push(() => demoSet(r.path, x)), delete: r => ops.push(() => demoDelete(r.path)), commit: async () => ops.forEach(f => f()) };
+};
 
 const KUPOT = {
   clalit:  {short:"כללית מושלם פלטינום", cap:"75% מההוצאה, עד תקרת סל ההריון. את הסכום המעודכן בדקי באתר כללית."},
@@ -632,7 +685,7 @@ function show(name){ SCREENS.forEach(s => $(s).classList.toggle("hidden", s!==na
 // ───────────── state ─────────────
 let me = null;            // users/{uid} doc
 let family = null;        // families/{fid} doc
-const state = { mode:"lmp", date:"", kupa:"", babyName:"", babySex:"", done:{}, custom:[], overrides:{}, shop:{cats:[],prods:[],opts:[]}, filter:"all", openOnly:false };
+const state = { mode:"lmp", date:"", kupa:"", babyName:"", babySex:"", done:{}, custom:[], overrides:{}, shop:{cats:[],prods:[],opts:[]}, shopCat:"all", filter:"all", openOnly:false };
 const expanded = new Set();
 let addingWeek = null;
 let unsubs = [];
@@ -680,10 +733,16 @@ onAuthStateChanged(auth, async (fu) => {
     unsubs.forEach(u=>u()); unsubs = [];
     if (!fu) {
       clearTimeout(bootTimer);
-      me = null; family = null;
+      me = null; family = null; DEMO = false; document.body.classList.remove("demo"); $("demoBar").classList.add("hidden");
+      $("loginError").textContent = deniedMsg; deniedMsg = "";
       $("inviteBanner").classList.toggle("hidden", !pendingJoin());
       $("googleBtn").disabled = false; $("googleBtnText").textContent = "המשך עם Google";
       show("login"); return;
+    }
+    const em = (fu.email || "").toLowerCase();
+    if (!ALLOWED_EMAILS.includes(em)) {
+      deniedMsg = "האתר פרטי. לחשבון " + (fu.email || "") + " אין גישה. אפשר להתחבר עם חשבון Google אחר.";
+      clearTimeout(bootTimer); await signOut(auth); return;
     }
     bootStep = "profile";
     const userRef = doc(db, "users", fu.uid);
@@ -831,18 +890,19 @@ async function startApp(){
     rerender();
   }, e => setSync("לא הצלחתי לטעון משימות: " + (e.code||e.message))));
 
-  unsubs.push(onSnapshot(query(collection(db, "invites"), where("familyId","==",fid)), s => {
+  if (!DEMO) unsubs.push(onSnapshot(query(collection(db, "invites"), where("familyId","==",fid)), s => {
     $("pendingList").innerHTML = s.docs.map(d => `<li><span>${esc(d.id)}</span><button class="link" data-uninvite="${esc(d.id)}">ביטול</button></li>`).join("");
   }, () => {}));
 
-  setSync("הכול נשמר ומסונכרן עם בני המשפחה.");
+  setSync(syncOK());
 }
 
 function setSync(t){ $("sync").textContent = t; }
+const syncOK = () => DEMO ? "מצב הדגמה: השינויים לא נשמרים." : "הכול נשמר ומסונכרן עם בני המשפחה.";
 let toastTimer = null;
 function toast(msg){ const t=$("toast"); t.textContent=msg; t.classList.remove("hidden"); clearTimeout(toastTimer); toastTimer=setTimeout(()=>t.classList.add("hidden"),5000); }
 async function write(fn){
-  try { await fn(); setSync("הכול נשמר ומסונכרן עם בני המשפחה."); }
+  try { await fn(); setSync(syncOK()); }
   catch(e){ console.error(e); const m="השמירה נכשלה (" + (e.code||e.message) + "). בדקי את החיבור ונסי שוב."; setSync(m); toast(m); }
 }
 function saveSettings(){
@@ -1173,7 +1233,9 @@ function prodHTML(p){
 function renderShop(){
   const { cats, prods, opts } = state.shop;
   const catIdx = Object.fromEntries(cats.map((c,i)=>[c.id,i]));
-  const ps = prods.filter(p=>catIdx[p.cat]!==undefined).sort((a,b)=>catIdx[a.cat]-catIdx[b.cat] || (a.createdAt||0)-(b.createdAt||0));
+  if (state.shopCat !== "all" && !cats.some(c=>c.id===state.shopCat)) state.shopCat = "all";
+  const fc = state.shopCat, fcName = (cats.find(c=>c.id===fc)||{}).name;
+  const ps = prods.filter(p=>catIdx[p.cat]!==undefined && (fc==="all" || p.cat===fc)).sort((a,b)=>catIdx[a.cat]-catIdx[b.cat] || (a.createdAt||0)-(b.createdAt||0));
   const pIdx = Object.fromEntries(ps.map((p,i)=>[p.id,i]));
   const pBy = Object.fromEntries(ps.map(p=>[p.id,p]));
   const inc = opts.filter(o=>pBy[o.pid] && (o.decision==="maybe"||o.decision==="final"))
@@ -1183,7 +1245,7 @@ function renderShop(){
   const noPrice = inc.filter(o=>!(o.price>0)).length;
 
   const tiles = `<div class="tiles">
-    <div class="tile main"><small>סה״כ מתוכנן</small><b>${money(total)}</b></div>
+    <div class="tile main"><small>סה״כ מתוכנן${fcName?" · "+esc(fcName):""}</small><b>${money(total)}</b></div>
     <div class="tile"><small>סופי</small><b>${money(fin)}</b></div>
     <div class="tile"><small>כנראה</small><b>${money(total-fin)}</b></div>
     <div class="tile"><small>מתוכם באילת</small><b>${money(eil)}</b></div></div>
@@ -1201,7 +1263,7 @@ function renderShop(){
       ${rows.length?`<div class="tbl"><table><thead><tr><th>מוצר</th><th>דגם</th><th>צבע</th><th>הערות</th><th>מחיר</th><th>תשלום</th></tr></thead><tbody>${rowsHTML}</tbody></table></div>`:`<div class="empty">עוד אין פריטים מהחנות הזו.</div>`}</section>`;
   }).join("");
 
-  const catsHTML = cats.length ? cats.map(c => {
+  const catsHTML = cats.length ? cats.filter(c=>fc==="all"||c.id===fc).map(c => {
     const cp = ps.filter(p=>p.cat===c.id);
     return `<section class="cat"><div class="cathead"><h3>${esc(c.name)}</h3><button class="link" data-shop="edit-cat" data-id="${esc(c.id)}">עריכה</button></div>
       ${cp.length?`<ul class="prods">${cp.map(prodHTML).join("")}</ul>`:`<div class="empty">עוד אין מוצרים בקטגוריה.</div>`}
@@ -1209,7 +1271,8 @@ function renderShop(){
   }).join("")
   : `<div class="panel"><p>עוד אין קטגוריות. אפשר להתחיל מרשימה מוכנה ולערוך אותה אחר כך.</p><button class="btn" type="button" data-shop="seed">הוספת קטגוריות מוכנות</button></div>`;
 
-  $("shopBody").innerHTML = `${tiles}
+  const chips = cats.length ? `<div class="chips" role="group" aria-label="סינון לפי קטגוריה"><button class="chip" data-sc="all" aria-pressed="${fc==="all"}">הכול</button>${cats.map(c=>`<button class="chip" data-sc="${esc(c.id)}" aria-pressed="${fc===c.id}">${esc(c.name)}</button>`).join("")}</div>` : "";
+  $("shopBody").innerHTML = `${chips}${tiles}
     <h2 class="sh2">מה קונים ואיפה</h2>${stores}
     <div class="sh2"><span>ציוד לפי קטגוריות</span><button class="btn" type="button" data-shop="add-cat">+ קטגוריה</button></div>${catsHTML}`;
 }
@@ -1308,6 +1371,7 @@ document.addEventListener("click", e=>{
   const j=e.target.closest("[data-jump]"); if(j){ jump(+j.dataset.jump); return; }
   const sw=e.target.closest("[data-pal]");
   if(sw){ applyPalette(sw.dataset.pal); write(()=>updateDoc(doc(db,"users",me.id),{palette:sw.dataset.pal})); return; }
+  const sc=e.target.closest("[data-sc]"); if(sc){ state.shopCat=sc.dataset.sc; renderShop(); return; }
   const sh=e.target.closest("[data-shop]"); if(sh){ shopAction(sh.dataset.shop, sh.dataset.id); return; }
   const ed=e.target.closest("[data-edit]"); if(ed){ editTask(ed.dataset.edit); return; }
   const rs=e.target.closest("[data-reset]");
@@ -1350,6 +1414,58 @@ $("babyName").addEventListener("change",()=>{ state.babyName=$("babyName").value
 $("babySex").addEventListener("change",()=>{ state.babySex=$("babySex").value; saveSettings(); render(); });
 $("modeLmp").onclick=()=>{ state.mode="lmp"; syncMode(); saveSettings(); render(); };
 $("modeEdd").onclick=()=>{ state.mode="edd"; syncMode(); saveSettings(); render(); };
+
+// ───────────── demo mode ─────────────
+let realMe = null;
+const isoDay = d => d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+function resetState(){ Object.assign(state, { mode:"lmp", date:"", kupa:"", babyName:"", babySex:"", done:{}, custom:[], overrides:{}, shop:{cats:[],prods:[],opts:[]}, shopCat:"all", filter:"all", openOnly:false }); addingWeek = null; expanded.clear(); syncChips(); }
+function demoSeed(){
+  demoStore.clear();
+  const f = "demo-family", b = "families/" + f, t = Date.now();
+  const lmp = new Date(); lmp.setDate(lmp.getDate() - (22*7 + 3));
+  demoStore.set("users/demo", { name:"דנה", email:"dana@example.com", familyId:f, palette: (realMe && realMe.palette) || localPalette() });
+  demoStore.set(b, { id:f, name:"המשפחה של דנה", members:[
+    { id:"demo", name:"דנה", email:"dana@example.com", avatar:"", role:"owner" },
+    { id:"demo2", name:"יוני", email:"yoni@example.com", avatar:"", role:"member" } ] });
+  demoStore.set(b+"/data/settings", { mode:"lmp", date:isoDay(lmp), kupa:"maccabi", babyName:"נועה", babySex:"girl", updatedAt:t });
+  const done = {};
+  ["shaban-check","folic","meds","book-ob","book-nt","work40","genetic","us-heart","ob-first","blood1","book-nipt","book-early","book-nurse","nipt","nt","nurse","book-late","book-afp","early-scan","afp","employer","course"]
+    .forEach((id,i) => { done[id] = { by: i%3 ? "דנה" : "יוני", at: t }; });
+  demoStore.set(b+"/data/done", { items: done });
+  demoStore.set(b+"/data/overrides", { items: { course: { t:"קורס הכנה ללידה בבית החולים", d:"לבדוק תאריכים ולהירשם", w:20 } } });
+  demoStore.set(b+"/tasks/t1", { w:22, t:"לבדוק מחירי עגלות בחנויות", d:"", by:"דנה", createdAt:1 });
+  demoStore.set(b+"/tasks/t2", { w:24, t:"לתאם סיור בבית החולים", d:"להתקשר ולשאול על ימי סיור", by:"יוני", createdAt:2 });
+  [["c1","עגלה וטיולים"],["c2","שינה"],["c3","האכלה והנקה"]].forEach(([id,name],i) => demoStore.set(b+"/shopCats/"+id, { name, createdAt:i+1 }));
+  [["p1","עגלה","c1",30],["p2","כיסא בטיחות","c1",32],["p3","מיטת תינוק","c2",28],["p4","משאבת חלב","c3",34]]
+    .forEach(([id,name,cat,when],i) => demoStore.set(b+"/shopProds/"+id, { name, cat, when, createdAt:i+1 }));
+  [["p1","Bugaboo","Fox 5","שחור",5200,"עגליס",false,"אשראי","maybe",""],
+   ["p1","Cybex","Priam","אפור",4300,"בייבי סטאר",true,"תשלומים","final","זול יותר באילת"],
+   ["p1","Joolz","Hub","ירוק",4900,"שילב",false,"","none",""],
+   ["p2","Maxi-Cosi","Pebble 360","שחור",1450,"שיין",false,"אשראי","final",""],
+   ["p2","Cybex","Cloud T","אפור",1890,"עגליס",false,"מזומן","no","יקר"],
+   ["p3","Stokke","Sleepi","לבן",3300,"מיננה",false,"אשראי","maybe",""],
+   ["p3","","מיטה מעץ","טבעי",450,"איקאה",false,"","none",""],
+   ["p4","Medela","Swing Flex","",780,"אלי אקספרס",false,"אשראי","final",""],
+   ["p4","Philips Avent","חשמלית","",650,"מוצצים",true,"אשראי","maybe",""]]
+    .forEach(([pid,company,model,color,price,store,eilat,payment,decision,notes],i) => demoStore.set(b+"/shopOpts/o"+(i+1), { pid, company, model, color, price, store, eilat, payment, decision, notes, createdAt:i+1 }));
+}
+function enterDemo(){
+  if (DEMO) return;
+  realMe = me; unsubs.forEach(u=>u()); unsubs = [];
+  DEMO = true; document.body.classList.add("demo"); $("demoBar").classList.remove("hidden");
+  resetState(); demoSeed();
+  me = { id:"demo", name:"דנה", email:"dana@example.com", avatar:"", familyId:"demo-family", palette:(realMe && realMe.palette) || localPalette() };
+  startApp(); setView("list");
+}
+function exitDemo(){
+  if (!DEMO) return;
+  unsubs.forEach(u=>u()); unsubs = []; demoStore.clear(); demoListeners.clear();
+  DEMO = false; document.body.classList.remove("demo"); $("demoBar").classList.add("hidden");
+  me = realMe; realMe = null; resetState();
+  startApp(); setView("family");
+}
+$("demoBtn").onclick = enterDemo;
+$("demoExit").onclick = exitDemo;
 </script>
 </body>
 </html>
