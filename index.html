@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>צ׳ק ליסט הריון לפי שבועות</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Rubik:wght@500;600;700&family=Assistant:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+/* Layout: sticky header with week status, then one column of week cards (4–42 + after birth). */
+:root{
+  --bg:#f3f5f7; --surface:#ffffff; --ink:#1b2430; --muted:#5d6977; --line:#dde3ea;
+  --accent:#0f6e74; --accent-soft:#e1f0f0;
+  --basket:#1f7a45; --basket-bg:#e3f3e8;
+  --shaban:#2f4fb0; --shaban-bg:#e6ebfa;
+  --private:#9a5a00; --private-bg:#fbefd9;
+  --book:#7a3fa8; --book-bg:#f1e8f8;
+  --rights:#8a3b3b; --rights-bg:#f8e7e7;
+  --display:"Rubik", "Assistant", system-ui, sans-serif;
+  --body:"Assistant", "Rubik", system-ui, sans-serif;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#11161c; --surface:#1a2129; --ink:#e7edf3; --muted:#9aa7b4; --line:#2b3540;
+    --accent:#5cc3c6; --accent-soft:#16363a;
+    --basket:#6fd39a; --basket-bg:#173326;
+    --shaban:#9db2ff; --shaban-bg:#1d2747;
+    --private:#f0b65e; --private-bg:#3a2a12;
+    --book:#cfa2f2; --book-bg:#2f2140;
+    --rights:#f0a3a3; --rights-bg:#3c2020;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#11161c; --surface:#1a2129; --ink:#e7edf3; --muted:#9aa7b4; --line:#2b3540;
+  --accent:#5cc3c6; --accent-soft:#16363a;
+  --basket:#6fd39a; --basket-bg:#173326;
+  --shaban:#9db2ff; --shaban-bg:#1d2747;
+  --private:#f0b65e; --private-bg:#3a2a12;
+  --book:#cfa2f2; --book-bg:#2f2140;
+  --rights:#f0a3a3; --rights-bg:#3c2020;
+  color-scheme: dark;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:17px;line-height:1.5}
+.wrap{max-width:760px;margin:0 auto;padding:0 16px 80px}
+h1,h2,h3{font-family:var(--display);text-wrap:balance;margin:0}
+header.top{padding:22px 0 10px}
+h1{font-size:1.6rem;font-weight:700}
+.sub{color:var(--muted);margin:4px 0 0;font-size:.95rem}
+.setup{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}
+.field{display:flex;flex-direction:column;gap:4px}
+.field label{font-size:.85rem;color:var(--muted);font-weight:600}
+.field input,.field select{font:inherit;font-size:16px;padding:9px 10px;border:1px solid var(--line);border-radius:10px;background:var(--surface);color:var(--ink)}
+.toggle{display:flex;gap:6px;margin-top:2px}
+.toggle button{font:inherit;font-size:.8rem;border:1px solid var(--line);background:var(--surface);color:var(--muted);border-radius:999px;padding:2px 10px;cursor:pointer}
+.toggle button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:#fff}
+@media (max-width:440px){.setup{grid-template-columns:1fr}}
+.status{position:sticky;top:0;z-index:5;background:var(--bg);padding:10px 0;border-bottom:1px solid var(--line)}
+.status-row{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.now{display:flex;align-items:center;gap:10px;min-width:0}
+.wk{font-family:var(--display);font-weight:700;background:var(--accent);color:#fff;border-radius:12px;padding:4px 12px;font-size:1.35rem;line-height:1.2;white-space:nowrap;font-variant-numeric:tabular-nums}
+.wk span{font-size:.85rem;font-weight:500;opacity:.9}
+.nowmeta{font-size:.88rem;color:var(--muted);line-height:1.3}
+.nowmeta b{color:var(--ink);font-weight:700;display:block;font-size:.95rem}
+.btn{font:inherit;font-size:.9rem;font-weight:600;border:0;background:var(--accent);color:#fff;border-radius:10px;padding:7px 12px;cursor:pointer}
+.btn:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,a:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.bar{height:6px;background:var(--line);border-radius:99px;margin-top:8px;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--accent);border-radius:99px;width:0}
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
+.chip{font:inherit;font-size:.85rem;border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:999px;padding:4px 11px;cursor:pointer}
+.chip[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+details.info{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px 14px;margin:16px 0}
+details.info summary{cursor:pointer;font-weight:700;font-family:var(--display)}
+details.info ul{margin:8px 0 0;padding-inline-start:20px}
+details.info li{margin:4px 0}
+.legend{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0 0}
+.tri{font-family:var(--display);font-size:1.15rem;margin:28px 0 8px;color:var(--accent)}
+.week{background:var(--surface);border:1px solid var(--line);border-radius:14px;margin:10px 0;scroll-margin-top:110px}
+.week.current{border:2px solid var(--accent);box-shadow:0 0 0 4px var(--accent-soft)}
+.week.past .whead h3{color:var(--muted)}
+.whead{display:flex;align-items:baseline;justify-content:space-between;gap:8px;padding:12px 14px 4px}
+.whead h3{font-size:1.1rem}
+.whead .dates{color:var(--muted);font-size:.85rem;font-variant-numeric:tabular-nums}
+.pill-now{background:var(--accent);color:#fff;border-radius:999px;font-size:.75rem;padding:1px 8px;margin-inline-start:6px;font-family:var(--body);font-weight:700;vertical-align:middle}
+.items{list-style:none;margin:0;padding:2px 6px 4px}
+.item{display:grid;grid-template-columns:30px 1fr;align-items:start;column-gap:6px;padding:2px 6px;border-radius:10px}
+.item + .item{border-top:1px solid var(--line)}
+.item input[type=checkbox]{width:21px;height:21px;margin:9px 0 0;accent-color:var(--accent);cursor:pointer}
+.row{all:unset;box-sizing:border-box;display:flex;align-items:center;gap:8px;width:100%;min-height:40px;padding:6px 0;cursor:pointer}
+.row .t{flex:1;font-weight:600;font-size:.98rem;line-height:1.35;min-width:0}
+.dot{width:8px;height:8px;border-radius:50%;flex:none}
+.dot.basket{background:var(--basket)} .dot.shaban{background:var(--shaban)} .dot.mixed{background:var(--private)}
+.dot.book{background:var(--book)} .dot.rights{background:var(--rights)} .dot.custom{background:var(--accent)}
+.chev{flex:none;color:var(--muted);font-size:.8rem;transition:transform .15s}
+.row[aria-expanded="true"] .chev{transform:rotate(180deg)}
+.more{grid-column:2;padding:0 0 10px}
+.item.done .t{text-decoration:line-through;color:var(--muted)}
+.item .d{color:var(--muted);font-size:.93rem}
+.tag.custom{color:var(--accent);background:var(--accent-soft)}
+.del{font:inherit;font-size:.85rem;color:var(--rights);background:none;border:0;padding:0;margin-top:8px;cursor:pointer;text-decoration:underline;text-underline-offset:3px}
+.addbtn{font:inherit;font-size:.9rem;font-weight:600;color:var(--accent);background:none;border:0;padding:6px 14px 12px;cursor:pointer}
+.addform{display:flex;flex-direction:column;gap:8px;padding:6px 14px 14px}
+.addform input,.addform textarea{font:inherit;font-size:16px;padding:8px 10px;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--ink);width:100%}
+.addform textarea{min-height:56px;resize:vertical}
+.addform .acts{display:flex;gap:8px}
+.btn.ghost{background:none;color:var(--muted);border:1px solid var(--line)}
+.sync{font-size:.8rem;color:var(--muted);margin-top:6px}
+.item .d b{color:var(--ink)}
+.tags{display:flex;flex-wrap:wrap;gap:5px;margin-top:6px}
+.tag{font-size:.75rem;font-weight:700;border-radius:6px;padding:1px 7px;white-space:nowrap}
+.tag.basket{color:var(--basket);background:var(--basket-bg)}
+.tag.shaban{color:var(--shaban);background:var(--shaban-bg)}
+.tag.private{color:var(--private);background:var(--private-bg)}
+.tag.book{color:var(--book);background:var(--book-bg)}
+.tag.rights{color:var(--rights);background:var(--rights-bg)}
+.tag.win{color:var(--muted);background:var(--bg);font-variant-numeric:tabular-nums}
+.link{font:inherit;font-size:.85rem;font-weight:700;color:var(--accent);background:none;border:0;padding:0;cursor:pointer;text-decoration:underline;text-underline-offset:3px}
+.linked{font-size:.85rem;margin-top:5px}
+.linked.ok{color:var(--basket)}
+.linked.warn{color:var(--private)}
+.item.reminder{background:var(--bg)}
+.item.reminder .row .t::before{content:"עדיין פתוח · ";color:var(--private);font-weight:700}
+.empty{color:var(--muted);font-size:.9rem;padding:4px 14px 12px}
+.note{color:var(--muted);font-size:.85rem;margin-top:28px;border-top:1px solid var(--line);padding-top:12px}
+.note a{color:var(--accent)}
+.hidden{display:none !important}
+@media (prefers-reduced-motion: no-preference){html{scroll-behavior:smooth}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="status" id="status">
+    <div class="status-row">
+      <div class="now" id="nowText"><span class="wk">שבוע ?</span><span class="nowmeta">הזיני תאריך למטה</span></div>
+      <button class="btn" id="jumpBtn" type="button">לשבוע הנוכחי</button>
+    </div>
+    <div class="bar" aria-hidden="true"><i id="barFill"></i></div>
+  </div>
+  <header class="top">
+    <h1>ההריון שלי, שבוע אחר שבוע</h1>
+    <p class="sub">בדיקות, תורים שצריך לקבוע מראש, זכויות והחזרים, לפי מסלול המעקב בישראל.</p>
+    <div class="setup">
+      <div class="field">
+        <label for="dateInput" id="dateLabel">תאריך הווסת האחרונה</label>
+        <input type="date" id="dateInput">
+        <div class="toggle" role="group" aria-label="סוג תאריך">
+          <button type="button" id="modeLmp" aria-pressed="true">וסת אחרונה</button>
+          <button type="button" id="modeEdd" aria-pressed="false">תאריך לידה משוער</button>
+        </div>
+      </div>
+      <div class="field">
+        <label for="kupa">קופת חולים (ביטוח משלים)</label>
+        <select id="kupa">
+          <option value="">לא נבחרה</option>
+          <option value="clalit">כללית (מושלם פלטינום)</option>
+          <option value="maccabi">מכבי (מכבי שלי)</option>
+          <option value="meuhedet">מאוחדת (שיא)</option>
+          <option value="leumit">לאומית (זהב)</option>
+        </select>
+      </div>
+    </div>
+  </header>
+
+  <div class="chips" role="group" aria-label="סינון">
+    <button class="chip" data-f="all" aria-pressed="true">הכול</button>
+    <button class="chip" data-f="test" aria-pressed="false">בדיקות</button>
+    <button class="chip" data-f="book" aria-pressed="false">לקבוע תור</button>
+    <button class="chip" data-f="rights" aria-pressed="false">זכויות וכסף</button>
+    <button class="chip" data-f="prep" aria-pressed="false">הכנות</button>
+    <button class="chip" data-f="custom" aria-pressed="false">המשימות שלי</button>
+    <button class="chip" id="openOnly" aria-pressed="false">רק מה שפתוח</button>
+  </div>
+
+  <details class="info" id="shabanInfo">
+    <summary>איך עובדים ההחזרים מהקופה</summary>
+    <div id="shabanBody"></div>
+    <div class="legend">
+      <span class="tag basket">בסל · חינם דרך הקופה</span>
+      <span class="tag shaban">החזר מסל ההריון בשב״ן</span>
+      <span class="tag private">פרטי / לפי התוויה</span>
+      <span class="tag book">לקבוע תור מראש</span>
+      <span class="tag rights">זכויות</span>
+    </div>
+  </details>
+
+  <main id="weeks"></main>
+
+  <p class="note">המידע כאן כללי ומבוסס על המלצות משרד הבריאות ופרסומי הקופות (נבדק בנובמבר 2026). הרופא/ה והאחות שלך קובעים מה מתאים לך, ותנאי ההחזר המדויקים מופיעים בתקנון השב״ן של הקופה. </p>
+  <p class="sync" id="sync">הסימונים והמשימות שלך נשמרים בדפדפן הזה.</p>
+</div>
+
+<script>
+const KUPOT = {
+  clalit:  {short:"כללית מושלם פלטינום", cap:"75% מההוצאה, עד תקרת סל ההריון. את הסכום המעודכן בדקי באתר כללית."},
+  maccabi: {short:"מכבי שלי", cap:"75% מההוצאה, עד כ־2,359 ₪ לכל הריון (נכון ליולי 2026), עד ארבעה הריונות. מכבי זהב וכסף לא כוללות את החבילה."},
+  meuhedet:{short:"מאוחדת שיא", cap:"75% מההוצאה, עד 2,365 ₪ להריון (עודכן ביולי 2026). NIPT מוחזר בנפרד, 75% עד 5,068 ₪, ולא יורד מהסל."},
+  leumit:  {short:"לאומית זהב", cap:"75% מההוצאה, עד תקרת סל ההריון. לאומית כסף לא כוללת את החבילה."}
+};
+
+/* type: test | book | rights | prep ; cost: basket | shaban | private | mixed */
+const ITEMS = [
+  {id:"shaban-check", w:4, type:"rights", cost:"shaban", t:"לבדוק את סל ההריון בביטוח המשלים",
+   d:"סל ההריון קיים רק ברובד העליון של השב״ן. יש תקופת המתנה של 6 חודשים מיום ההצטרפות לרובד, אז אם שדרגת לאחרונה, בדקי מאיזה תאריך את זכאית. שמרי כל קבלה עם השם המלא שלך."},
+  {id:"folic", w:4, type:"prep", t:"חומצה פולית",
+   d:"משרד הבריאות ממליץ על 400 מק״ג ביום מתחילת ההריון (ועדיף עוד לפניו), אלא אם הרופא/ה המליץ/ה על מינון אחר."},
+  {id:"meds", w:4, type:"prep", t:"לעבור על תרופות ותוספים קבועים עם רופא/ה",
+   d:"כולל תרופות ללא מרשם ותוספי תזונה."},
+  {id:"book-ob", w:4, type:"book", link:7, forId:"us-heart", t:"לקבוע תור לרופא/ת נשים ולאולטרסאונד דופק",
+   d:"הבדיקה הראשונה נעשית בשבועות 6–8."},
+
+  {id:"book-nt", w:5, type:"book", link:12, forId:"nt", t:"לקבוע תור לשקיפות עורפית",
+   d:"החלון הוא שבועות 11–14 בלבד, והתורים מתמלאים מהר. כדאי לקבוע כבר עכשיו."},
+
+  {id:"work40", w:6, type:"rights", cost:null, t:"40 שעות היעדרות בתשלום לבדיקות",
+   d:"עובדת במשרה מלאה זכאית ל־40 שעות היעדרות בשכר מלא לבדיקות הריון לאורך כל ההריון (במשרה חלקית, באופן יחסי). השעות לא יורדות מימי מחלה או חופשה. בקשי אישור עם שעות הבדיקה ומסרי למעסיק סמוך לבדיקה."},
+  {id:"genetic", w:6, end:10, type:"test", cost:"basket", t:"בדיקות סקר גנטיות (אם לא עשיתם לפני ההריון)",
+   d:"בדיקת דם לנשאות למחלות גנטיות. משרד הבריאות מממן בדיקת סקר גנטית מורחבת אחת בתקופת הפוריות. עדיף לעשות מוקדם, כדי שאם צריך גם בן/בת הזוג ייבדקו בזמן."},
+
+  {id:"us-heart", w:7, end:8, type:"test", cost:"basket", t:"אולטרסאונד דופק (״הריון צעיר״)",
+   d:"מאשר דופק ומיקום ההריון וקובע את גיל ההריון."},
+  {id:"ob-first", w:7, end:12, type:"test", cost:"basket", t:"ביקור ראשון אצל רופא/ת נשים",
+   d:"היסטוריה רפואית, הפניות לבדיקות ופנקס מעקב הריון. מומלץ עד שבוע 12."},
+  {id:"blood1", w:7, end:12, type:"test", cost:"basket", t:"בדיקות דם ושתן ראשונות",
+   d:"ספירת דם, סוג דם ו־Rh, סקר נוגדנים, סרולוגיות, סוכר בצום, שתן כללית ותרבית שתן. עד שבוע 12."},
+
+  {id:"book-nipt", w:8, type:"book", link:10, forId:"nipt", t:"להחליט על NIPT ולתאם",
+   d:"בדיקת דם לדנ״א עוברי, לא כלולה בסל. אפשר לבצע משבוע 10."},
+  {id:"book-early", w:8, type:"book", link:15, forId:"early-scan", t:"לקבוע סקירת מערכות מוקדמת",
+   d:"נעשית בשבועות 14–16. לא כלולה בסל, אבל יש עליה החזר מסל ההריון. רופאים מבוקשים נתפסים חודשים מראש."},
+  {id:"book-nurse", w:8, type:"book", link:12, forId:"nurse", t:"לקבוע פתיחת מעקב אצל אחות (קופה או טיפת חלב)",
+   d:"פתיחת המעקב נעשית סביב שבוע 12."},
+
+  {id:"nipt", w:10, end:13, type:"test", cost:"shaban", t:"NIPT (דנ״א עוברי)",
+   d:"בדיקת דם מהשבוע העשירי. מוחזרת 75% מסל ההריון בשב״ן.", meuhedetNote:"במאוחדת שיא ההחזר לא יורד מסל ההריון: 75% עד 5,068 ₪."},
+  {id:"cvs", w:10, end:13, type:"test", cost:"mixed", t:"סיסי שליה (רק אם הומלץ)",
+   d:"בדיקה פולשנית לאבחון גנטי, בשבועות 10–13. כשיש המלצה של ייעוץ גנטי היא במימון משרד הבריאות בבית חולים ציבורי. במסגרת פרטית יש החזר מסל ההריון."},
+
+  {id:"nt", w:12, from:11, end:14, type:"test", cost:"basket", t:"שקיפות עורפית + סקר ביוכימי (שליש ראשון)",
+   d:"אולטרסאונד ובדיקת דם להערכת סיכון לתסמונת דאון. דרך הקופה זה בסל. אצל רופא פרטי שאינו בהסכם, יש החזר מסל ההריון.", alsoShaban:true},
+  {id:"nurse", w:12, type:"test", cost:"basket", t:"פתיחת מעקב הריון אצל האחות",
+   d:"מדידות, לחץ דם, משקל ושתן. מכאן בערך פעם בחודש."},
+  {id:"flu", w:12, type:"prep", cost:"basket", t:"חיסון שפעת (בעונת החורף)",
+   d:"מומלץ בכל שלב של ההריון כשזו עונת השפעת. בסל."},
+  {id:"book-late", w:12, type:"book", link:22, forId:"late-scan", t:"לקבוע סקירת מערכות מאוחרת",
+   d:"נעשית בשבועות 21–24. כדאי לקבוע כבר עכשיו."},
+
+  {id:"book-afp", w:14, type:"book", link:17, forId:"afp", t:"לקבל הפניה לחלבון עוברי",
+   d:"בדיקת דם בשבועות 16–19. מספיקה הפניה ממך לאחות או לרופא/ה."},
+  {id:"book-amnio", w:14, type:"book", link:17, forId:"amnio", t:"מי שפיר: להחליט ולקבוע (אם רלוונטי)",
+   d:"נעשית בשבועות 16–22. מומלץ לדבר על זה עם הרופא/ה או בייעוץ גנטי."},
+
+  {id:"early-scan", w:15, from:14, end:16, type:"test", cost:"shaban", t:"סקירת מערכות מוקדמת",
+   d:"אולטרסאונד מפורט של איברי העובר. לא כלולה בסל, אלא אם יש הוראה רפואית ואישור מראש. מוחזרת מסל ההריון."},
+
+  {id:"afp", w:17, from:16, end:19, type:"test", cost:"basket", t:"חלבון עוברי (תבחין משולש/מרובע)",
+   d:"בדיקת דם לסקר תסמונות ומומים בתעלה העצבית."},
+  {id:"amnio", w:17, from:16, end:22, type:"test", cost:"mixed", t:"מי שפיר (לפי בחירה/התוויה)",
+   d:"במימון משרד הבריאות לפי גיל או התוויה רפואית. מי שלא זכאית יכולה לבצע במסגרת פרטית, כולל צ׳יפ גנטי, עם החזר מסל ההריון."},
+
+  {id:"book-echo", w:18, type:"book", link:22, forId:"echo", t:"לשקול אקו לב עובר ולקבוע",
+   d:"בדיקה אופציונלית שמתמקדת בלב העובר, לרוב בשבועות 20–24."},
+
+  {id:"employer", w:20, type:"rights", cost:null, t:"להודיע למעסיק על ההריון",
+   d:"החל מהחודש החמישי חובה להודיע. מרגע ההודעה חלה הגנה מפני פיטורים, וגם פטור משעות נוספות ומעבודה במנוחה השבועית."},
+  {id:"course", w:20, type:"book", cost:null, t:"להירשם לקורס הכנה ללידה",
+   d:"בבית החולים, בקופה או באופן פרטי. בדקי אם יש הנחה או החזר בסל ההריון של הקופה."},
+  {id:"book-gct", w:20, type:"book", link:25, forId:"gct", t:"לקבל הפניה להעמסת סוכר",
+   d:"הבדיקה נעשית בשבועות 24–28."},
+
+  {id:"late-scan", w:22, from:21, end:24, type:"test", cost:"basket", t:"סקירת מערכות מאוחרת",
+   d:"הסקירה המרכזית בישראל. בסל דרך הקופה. סקירה נוספת אצל רופא פרטי שאינו בהסכם מוחזרת מסל ההריון.", alsoShaban:true},
+  {id:"echo", w:22, from:20, end:24, type:"test", cost:"shaban", t:"אקו לב עובר (אופציונלי)",
+   d:"במסגרת פרטית, עם החזר מסל ההריון."},
+
+  {id:"gct", w:25, from:24, end:28, type:"test", cost:"basket", t:"העמסת סוכר + ספירת דם",
+   d:"סקר לסוכרת הריון. בודקים שוב גם ספירת דם וברזל."},
+
+  {id:"tdap", w:27, end:36, type:"test", cost:"basket", t:"חיסון שעלת",
+   d:"משרד הבריאות ממליץ עליו בכל הריון, בשבועות 27–36, כדי להגן על התינוק בחודשים הראשונים. בסל, עם השתתפות עצמית קטנה. נותנים אותו באחות בקופה."},
+
+  {id:"antid", w:28, type:"test", cost:"basket", t:"אנטי־D (רק לבעלות Rh שלילי)",
+   d:"זריקה סביב שבוע 28. לפי סוג הדם מהבדיקות הראשונות."},
+  {id:"kicks", w:28, type:"prep", t:"ללמוד לעקוב אחרי תנועות העובר",
+   d:"אם יש ירידה בתנועות, פני מיד למיון יולדות. לא מחכים לתור."},
+
+  {id:"hospital", w:30, type:"prep", t:"לבחור בית חולים ולהירשם לסיור בחדרי לידה",
+   d:"הלידה עצמה ממומנת על ידי ביטוח לאומי בכל בית חולים."},
+  {id:"cord", w:30, type:"prep", t:"להחליט על בנק דם טבורי",
+   d:"תרומה לבנק ציבורי בחינם, או שמירה בבנק פרטי בתשלום. אם בוחרים, צריך להזמין ערכה מראש ולהביא ללידה."},
+  {id:"bl-check", w:30, type:"rights", cost:null, t:"לבדוק זכאות לדמי לידה בביטוח לאומי",
+   d:"הזכאות המלאה (15 שבועות) תלויה בתקופת האכשרה, למשל 10 חודשי ביטוח מתוך 14 שלפני הלידה. אפשר לבדוק במחשבון באתר ביטוח לאומי."},
+  {id:"leave-plan", w:30, type:"rights", cost:null, t:"לתכנן את חופשת הלידה",
+   d:"עובדת שעבדה 12 חודשים אצל אותו מעסיק זכאית ל־26 שבועות חופשת לידה. אפשר להאריך בחל״ת ולחלק חלק מהשבועות עם בן/בת הזוג."},
+
+  {id:"weight-us", w:32, from:30, end:34, type:"test", cost:"basket", t:"אולטרסאונד הערכת משקל (לפי הפניה)",
+   d:"נעשה כשהרופא/ה מפנה."},
+  {id:"gear", w:32, type:"prep", t:"כיסא בטיחות, עגלה וציוד בסיסי",
+   d:"כיסא בטיחות צריך להיות מותקן ברכב לפני שיוצאים מבית החולים."},
+  {id:"doula", w:32, type:"prep", cost:"shaban", t:"דולה / יועצת הנקה (אם רוצה)",
+   d:"לרוב יש עליהן החזר מסל ההריון, עם תקרה לכל שירות. בדקי בתקנון."},
+
+  {id:"bag", w:34, type:"prep", t:"לארוז תיק לידה + תיקיית מסמכים",
+   d:"תעודת זהות, כרטיס קופה, פנקס מעקב ההריון ותוצאות חשובות: סוג דם, סקירות, העמסת סוכר ו־GBS."},
+  {id:"book-gbs", w:34, type:"book", link:36, forId:"gbs", t:"לקבוע תרבית GBS",
+   d:"נעשית בשבועות 35–37, אצל רופא/ת הנשים."},
+
+  {id:"gbs", w:36, from:35, end:37, type:"test", cost:"basket", t:"תרבית GBS (סטרפטוקוק מקבוצה B)",
+   d:"משרד הבריאות ממליץ כיום על הבדיקה לכל ההרות. אם התוצאה חיובית, תקבלי אנטיביוטיקה בזמן הלידה."},
+  {id:"when-go", w:36, type:"prep", t:"לדעת מתי מגיעים לבית החולים",
+   d:"ירידת מים, דימום, צירים סדירים או ירידה בתנועות העובר: פונים למיון יולדות."},
+
+  {id:"book-post", w:38, type:"book", link:40, forId:"post", t:"לתאם מעקב הריון עודף",
+   d:"אם עוד לא ילדת, המעקב מתחיל אחרי שבוע 40 במרפאה או בבית החולים."},
+
+  {id:"post", w:40, type:"test", cost:"basket", t:"מעקב הריון עודף",
+   d:"מוניטור ואולטרסאונד להערכת מצב העובר, כל כמה ימים."},
+  {id:"induction", w:41, type:"prep", t:"לדבר עם הצוות על זירוז",
+   d:"הצוות יסביר את ההמלצה לפי המעקב."},
+
+  {id:"bl-after", w:43, type:"rights", cost:null, t:"מענק לידה ודמי לידה",
+   d:"בית החולים מדווח לביטוח לאומי על הלידה, ומענק הלידה משולם בלי לבקש. ודאי שתביעת דמי הלידה הוגשה ושהפרטים של חשבון הבנק מעודכנים."},
+  {id:"receipts", w:43, type:"rights", cost:"shaban", t:"להגיש קבלות לשב״ן",
+   d:"סל ההריון בתוקף עד 6 חודשים אחרי הלידה. קבלה או חשבונית רק על שמך המלא."},
+  {id:"tipat", w:43, type:"prep", t:"טיפת חלב: רישום וביקור ראשון",
+   d:"בטיפת חלב יש מעקב גדילה וחיסוני שגרה, כולל ההגנה מפני RSV לתינוקות."}
+];
+
+const WEEK_MIN = 4, WEEK_MAX = 43; // 43 = after birth
+const MS_DAY = 86400000;
+const LS_KEY = "preg-v1";
+const store = (()=>{ try{ return JSON.parse(localStorage.getItem(LS_KEY)||"{}"); }catch(e){ return {}; } })();
+const state = { mode: store.mode||"lmp", date: store.date||"", kupa: store.kupa||"", done: store.done||{}, custom: store.custom||[], updatedAt: store.updatedAt||0, filter:"all", openOnly:false };
+const expanded = new Set();
+let addingWeek = null;
+
+/* ---- saving: browser first, then the person's private space in the artifact db ---- */
+let db=null, uid=null, writing=false, again=false, saveTimer=null;
+function payload(){ return {mode:state.mode,date:state.date,kupa:state.kupa,done:state.done,custom:state.custom,updatedAt:state.updatedAt}; }
+function setSync(t){ document.getElementById("sync").textContent=t; }
+function save(){
+  state.updatedAt = Date.now();
+  try{ localStorage.setItem(LS_KEY, JSON.stringify(payload())); }catch(e){}
+  clearTimeout(saveTimer); saveTimer=setTimeout(flush, 700);
+}
+async function flush(retried){
+  if(!db||!uid) return;
+  if(writing){ again=true; return; }
+  writing=true;
+  try{ await db.doc("data/users/"+uid+"/state").set(JSON.parse(JSON.stringify(payload()))); setSync("נשמר בחשבון שלך, ומסונכרן בין המכשירים."); }
+  catch(e){
+    if(e && e.code==="unavailable" && !retried){ writing=false; setTimeout(()=>flush(true), 800+Math.random()*800); return; }
+    setSync("לא הצלחתי לשמור בחשבון כרגע. השינויים נשמרו בדפדפן הזה.");
+  }
+  writing=false;
+  if(again){ again=false; flush(); }
+}
+function applyRemote(r){
+  state.mode=r.mode||"lmp"; state.date=r.date||""; state.kupa=r.kupa||"";
+  state.done=r.done||{}; state.custom=Array.isArray(r.custom)?r.custom:[]; state.updatedAt=r.updatedAt||0;
+  try{ localStorage.setItem(LS_KEY, JSON.stringify(payload())); }catch(e){}
+  di.value=state.date; ks.value=state.kupa; syncMode(); render();
+}
+(async()=>{
+  try{
+    if(!window.claude || typeof window.claude.use!=="function") return;
+    const [d,u] = await Promise.all([window.claude.use("db"), window.claude.use("user")]);
+    if(!d||!u) return;
+    const id = await u.id(); if(!id) return;
+    db=d; uid=id;
+    const timer=setTimeout(()=>setSync("החשבון לא זמין כרגע. השינויים נשמרים בדפדפן הזה."),10000);
+    const snap = await db.doc("data/users/"+uid+"/state").get();
+    clearTimeout(timer);
+    const r = snap.exists ? snap.data() : null;
+    if(r && (r.updatedAt||0) >= state.updatedAt){ applyRemote(r); setSync("נשמר בחשבון שלך, ומסונכרן בין המכשירים."); }
+    else if(state.date || Object.keys(state.done).length || state.custom.length){ flush(); }
+    else setSync("נשמר בחשבון שלך, ומסונכרן בין המכשירים.");
+  }catch(e){}
+})();
+
+function allItems(){ return ITEMS.concat(state.custom.map(c=>({...c, type:"custom"}))); }
+const byId = Object.fromEntries(ITEMS.map(i=>[i.id,i]));
+const bookingsFor = {}; ITEMS.forEach(i=>{ if(i.forId){ (bookingsFor[i.forId] ||= []).push(i); } });
+
+function lmpDate(){
+  if(!state.date) return null;
+  const d = new Date(state.date+"T00:00:00");
+  if(isNaN(d)) return null;
+  return state.mode==="edd" ? new Date(d.getTime()-280*MS_DAY) : d;
+}
+function today(){ const n=new Date(); return new Date(n.getFullYear(),n.getMonth(),n.getDate()); }
+function ga(){ const l=lmpDate(); if(!l) return null; const days=Math.round((today()-l)/MS_DAY); return {w:Math.floor(days/7), d:days%7, days}; }
+const fmt = new Intl.DateTimeFormat("he-IL",{day:"numeric",month:"short"});
+function weekRange(w){ const l=lmpDate(); if(!l) return ""; const s=new Date(l.getTime()+w*7*MS_DAY), e=new Date(s.getTime()+6*MS_DAY); return fmt.format(s)+" – "+fmt.format(e); }
+function esc(s){ return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
+
+function costTags(it){
+  const k = KUPOT[state.kupa];
+  const sh = k ? "החזר " + k.short : "החזר מסל ההריון בשב״ן";
+  const out=[];
+  if(it.cost==="basket"){ out.push(`<span class="tag basket">בסל · דרך הקופה</span>`); if(it.alsoShaban) out.push(`<span class="tag shaban">פרטי: ${sh}</span>`); }
+  if(it.cost==="shaban") out.push(`<span class="tag shaban">${sh}</span>`);
+  if(it.cost==="mixed"){ out.push(`<span class="tag private">משרד הבריאות לפי התוויה</span>`); out.push(`<span class="tag shaban">פרטי: ${sh}</span>`); }
+  return out.join("");
+}
+function typeTag(it){
+  if(it.type==="book") return `<span class="tag book">לקבוע תור</span>`;
+  if(it.type==="rights") return `<span class="tag rights">זכויות וכסף</span>`;
+  if(it.type==="custom") return `<span class="tag custom">משימה שלי</span>`;
+  return "";
+}
+function dotClass(it){
+  if(it.type==="custom") return "custom";
+  if(it.type==="book") return "book";
+  if(it.type==="rights") return "rights";
+  return it.cost || "";
+}
+function winTag(it){
+  const a = it.from ?? it.w;
+  if(it.end && it.end!==a) return `<span class="tag win">שבועות ${a}–${it.end}</span>`;
+  return "";
+}
+function linkedLine(it){
+  if(it.type==="book" && it.link){
+    const target = byId[it.forId];
+    const lbl = it.link===43 ? "אחרי הלידה" : "שבוע "+it.link;
+    return `<div class="linked">התור עצמו מופיע ב<button class="link" data-jump="${it.link}">${lbl}${target? ": "+target.t:""}</button></div>`;
+  }
+  const bs = bookingsFor[it.id];
+  if(bs && bs.length){
+    const b=bs[0];
+    if(state.done[b.id]) return `<div class="linked ok">✓ סימנת שקבעת תור (בשבוע ${b.w})</div>`;
+    return `<div class="linked warn">עוד לא סימנת שקבעת תור · <button class="link" data-jump="${b.w}">לשבוע ${b.w}</button></div>`;
+  }
+  return "";
+}
+function itemHTML(it, reminder){
+  const done = !!state.done[it.id];
+  const key = it.id + (reminder ? "@"+reminder : "");
+  const open = expanded.has(key);
+  const isCustom = it.type==="custom";
+  let d = isCustom ? esc(it.d||"") : it.d;
+  if(it.meuhedetNote && state.kupa==="meuhedet") d += " <b>"+it.meuhedetNote+"</b>";
+  const cid = "c-"+key.replace("@","-r");
+  const title = isCustom ? esc(it.t) : it.t;
+  const dc = dotClass(it);
+  const body = reminder
+    ? `<div class="d">החלון נסגר בשבוע ${it.end}. הפרטים המלאים מופיעים ב<button class="link" data-jump="${it.w}">שבוע ${it.w}</button>.</div>`
+    : `${d?`<div class="d">${d}</div>`:""}<div class="tags">${typeTag(it)}${winTag(it)}${costTags(it)}</div>${linkedLine(it)}${isCustom?`<button class="del" data-del="${it.id}">מחיקת המשימה</button>`:""}`;
+  return `<li class="item${done?" done":""}${reminder?" reminder":""}">
+    <input type="checkbox" id="${cid}" data-id="${it.id}" ${done?"checked":""} aria-label="${title.replace(/"/g,"&quot;")}">
+    <button class="row" type="button" data-key="${key}" aria-expanded="${open}" aria-controls="m-${cid}">
+      <span class="t">${title}</span>${dc?`<span class="dot ${dc}" aria-hidden="true"></span>`:""}<span class="chev" aria-hidden="true">▾</span>
+    </button>
+    <div class="more" id="m-${cid}" ${open?"":"hidden"}>${body}</div></li>`;
+}
+function trimester(w){ return w<=13?1: w<=27?2: w<=42?3:4; }
+const TRI = {1:"שליש ראשון · שבועות 4–13",2:"שליש שני · שבועות 14–27",3:"שליש שלישי · שבועות 28–42",4:"אחרי הלידה"};
+
+function addHTML(w){
+  if(addingWeek!==w) return `<button class="addbtn" type="button" data-add="${w}">+ הוספת משימה</button>`;
+  return `<form class="addform" data-form="${w}">
+    <label class="hidden" for="nt-${w}">שם המשימה</label>
+    <input id="nt-${w}" name="t" placeholder="מה צריך לעשות?" required maxlength="140">
+    <label class="hidden" for="nd-${w}">פרטים</label>
+    <textarea id="nd-${w}" name="d" placeholder="פרטים (לא חובה)" maxlength="600"></textarea>
+    <div class="acts"><button class="btn" type="submit">הוספה</button><button class="btn ghost" type="button" data-cancel>ביטול</button></div>
+  </form>`;
+}
+
+function render(){
+  const g = ga();
+  const cur = g ? Math.min(Math.max(g.w,WEEK_MIN),42) : null;
+  const main = document.getElementById("weeks");
+  const all = allItems();
+  let html="", lastTri=0;
+  for(let w=WEEK_MIN; w<=WEEK_MAX; w++){
+    const tri=trimester(w);
+    let items = all.filter(i=>i.w===w);
+    let reminders = ITEMS.filter(i=>i.type==="test" && i.end && w>i.w && w<=i.end && !state.done[i.id]);
+    const visible = it => (state.filter==="all" || it.type===state.filter) && (!state.openOnly || !state.done[it.id]);
+    items = items.filter(visible); reminders = reminders.filter(visible);
+    const filtering = state.filter!=="all" || state.openOnly;
+    if(!items.length && !reminders.length && filtering && addingWeek!==w) continue;
+    if(tri!==lastTri){ html+=`<h2 class="tri">${TRI[tri]}</h2>`; lastTri=tri; }
+    const isCur = g && g.days>=0 && w===cur && g.w<=42;
+    const past = g && w<g.w && w<43;
+    const title = w===43 ? "אחרי הלידה" : "שבוע "+w;
+    html+=`<section class="week${isCur?" current":""}${past?" past":""}" id="w${w}">
+      <div class="whead"><h3>${title}${isCur?'<span class="pill-now">את כאן</span>':""}</h3><span class="dates">${w<43?weekRange(w):""}</span></div>`;
+    if(items.length||reminders.length) html+=`<ul class="items">${items.map(i=>itemHTML(i)).join("")}${reminders.map(i=>itemHTML(i,w)).join("")}</ul>`;
+    html+=addHTML(w)+`</section>`;
+  }
+  main.innerHTML = html;
+  if(addingWeek!==null){ const f=document.getElementById("nt-"+addingWeek); if(f) f.focus({preventScroll:true}); }
+
+  const now = document.getElementById("nowText"), bar=document.getElementById("barFill");
+  if(g && g.days>=0){
+    const l=lmpDate(), edd=new Date(l.getTime()+280*MS_DAY);
+    const left = Math.round((edd-today())/MS_DAY);
+    const tri = g.w<=13?"שליש ראשון": g.w<=27?"שליש שני":"שליש שלישי";
+    now.innerHTML = `<span class="wk">שבוע ${g.w}<span>+${g.d}</span></span><span class="nowmeta"><b>${tri}</b>לידה משוערת ${new Intl.DateTimeFormat("he-IL",{day:"numeric",month:"short",year:"numeric"}).format(edd)}${left>0?` · עוד ${left} ימים`:""}</span>`;
+    bar.style.width = Math.min(100, g.days/280*100)+"%";
+  } else {
+    now.innerHTML = `<span class="wk">שבוע ?</span><span class="nowmeta">${g?"התאריך עוד לא הגיע":"הזיני תאריך למטה"}</span>`;
+    bar.style.width="0";
+  }
+
+  const k=KUPOT[state.kupa];
+  document.getElementById("shabanBody").innerHTML = `<ul>
+    <li>חלק מהבדיקות כלולות ב<b>סל הבריאות</b> ובחינם דרך הקופה. על בדיקות שלא בסל, או כשבוחרים רופא פרטי, יש <b>החזר מסל ההריון</b> בביטוח המשלים.</li>
+    <li>${k? `<b>${k.short}:</b> ${k.cap}` : "בחרי קופה למעלה כדי לראות את גובה ההחזר."}</li>
+    <li>סל ההריון כלול רק ב<b>רובד העליון</b>, ויש <b>6 חודשי המתנה</b> מיום ההצטרפות אליו.</li>
+    <li>ביטוח בריאות פרטי שנעשה לפני חודשיים לא מכסה את ההריון הזה, ולכן הוא לא מופיע כאן. ההחזרים מהקופה לא קשורים אליו.</li>
+    <li>שמרי קבלות על שמך המלא. אפשר להגיש עד 6 חודשים אחרי הלידה.</li></ul>`;
+}
+function rerender(){ const y=window.scrollY; render(); window.scrollTo(0,y); }
+
+function jump(w){
+  if(!document.getElementById("w"+w)){ state.filter="all"; state.openOnly=false; syncChips(); render(); }
+  const t=document.getElementById("w"+w); if(t) t.scrollIntoView({block:"start"});
+}
+function syncChips(){
+  document.querySelectorAll(".chip[data-f]").forEach(c=>c.setAttribute("aria-pressed", c.dataset.f===state.filter));
+  document.getElementById("openOnly").setAttribute("aria-pressed", state.openOnly);
+}
+function syncMode(){
+  document.getElementById("modeLmp").setAttribute("aria-pressed", state.mode==="lmp");
+  document.getElementById("modeEdd").setAttribute("aria-pressed", state.mode==="edd");
+  document.getElementById("dateLabel").textContent = state.mode==="lmp" ? "תאריך הווסת האחרונה" : "תאריך לידה משוער";
+}
+
+document.addEventListener("change", e=>{
+  if(e.target.matches('input[type=checkbox][data-id]')){
+    const id=e.target.dataset.id; if(e.target.checked) state.done[id]=true; else delete state.done[id];
+    save(); rerender();
+  }
+});
+document.addEventListener("click", e=>{
+  const j=e.target.closest("[data-jump]"); if(j){ jump(+j.dataset.jump); return; }
+  const r=e.target.closest(".row[data-key]");
+  if(r){
+    const key=r.dataset.key, open=r.getAttribute("aria-expanded")!=="true";
+    if(open) expanded.add(key); else expanded.delete(key);
+    r.setAttribute("aria-expanded", open);
+    const m=document.getElementById(r.getAttribute("aria-controls")); if(m) m.hidden=!open;
+    return;
+  }
+  const c=e.target.closest(".chip[data-f]"); if(c){ state.filter=c.dataset.f; syncChips(); render(); return; }
+  const a=e.target.closest("[data-add]"); if(a){ addingWeek=+a.dataset.add; rerender(); return; }
+  if(e.target.closest("[data-cancel]")){ addingWeek=null; rerender(); return; }
+  const d=e.target.closest("[data-del]");
+  if(d){
+    const id=d.dataset.del;
+    if(d.dataset.confirm!=="1"){ d.dataset.confirm="1"; d.textContent="ללחוץ שוב כדי למחוק"; return; }
+    state.custom=state.custom.filter(x=>x.id!==id); delete state.done[id]; save(); rerender();
+  }
+});
+document.addEventListener("submit", e=>{
+  const f=e.target.closest("form[data-form]"); if(!f) return;
+  e.preventDefault();
+  const t=f.elements.t.value.trim(); if(!t) return;
+  const w=+f.dataset.form;
+  const id="u"+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+  state.custom.push({id, w, t, d:f.elements.d.value.trim()});
+  addingWeek=null; save(); rerender();
+});
+document.addEventListener("keydown", e=>{ if(e.key==="Escape" && addingWeek!==null){ addingWeek=null; rerender(); } });
+document.getElementById("openOnly").onclick=()=>{ state.openOnly=!state.openOnly; syncChips(); render(); };
+document.getElementById("jumpBtn").onclick=()=>{ const g=ga(); if(g && g.days>=0) jump(Math.min(Math.max(g.w,WEEK_MIN),42)); else document.getElementById("dateInput").focus(); };
+const di=document.getElementById("dateInput"); di.value=state.date;
+di.addEventListener("change",()=>{ state.date=di.value; save(); render(); });
+const ks=document.getElementById("kupa"); ks.value=state.kupa;
+ks.addEventListener("change",()=>{ state.kupa=ks.value; save(); render(); });
+document.getElementById("modeLmp").onclick=()=>{ state.mode="lmp"; syncMode(); save(); render(); };
+document.getElementById("modeEdd").onclick=()=>{ state.mode="edd"; syncMode(); save(); render(); };
+
+syncMode(); render();
+const g0=ga(); if(g0 && g0.days>=0 && g0.w>WEEK_MIN){ setTimeout(()=>{ const t=document.getElementById("w"+Math.min(g0.w,42)); if(t) t.scrollIntoView({block:"start", behavior:"auto"}); },60); }
+</script>
+</body>
+</html>
