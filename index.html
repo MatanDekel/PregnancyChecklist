@@ -10,37 +10,41 @@
 <style>
 /* Layout: sticky header with week status, then one column of week cards (4–42 + after birth). */
 :root{
-  --bg:#f3f5f7; --surface:#ffffff; --ink:#1b2430; --muted:#5d6977; --line:#dde3ea;
-  --accent:#0f6e74; --accent-soft:#e1f0f0;
-  --basket:#1f7a45; --basket-bg:#e3f3e8;
-  --shaban:#2f4fb0; --shaban-bg:#e6ebfa;
-  --private:#9a5a00; --private-bg:#fbefd9;
-  --book:#7a3fa8; --book-bg:#f1e8f8;
-  --rights:#8a3b3b; --rights-bg:#f8e7e7;
+  /* Baby pastels: pink accent, blue/green/lavender for categories and trimesters */
+  --bg:#fdf6f9; --surface:#ffffff; --ink:#3b3247; --muted:#7c7088; --line:#f1e1ea;
+  --accent:#d6628d; --accent-soft:#fde3ee; --on-accent:#ffffff;
+  --basket:#3d8a5c; --basket-bg:#e1f5e8;
+  --shaban:#3c6ea8; --shaban-bg:#e2eefc;
+  --private:#a0662a; --private-bg:#fff0d9;
+  --book:#7b58a6; --book-bg:#efe6fa;
+  --rights:#b0505f; --rights-bg:#fde6e6;
+  --t1:#f7b6cc; --t2:#a9cff2; --t3:#ade0bf;
   --display:"Rubik", "Assistant", system-ui, sans-serif;
   --body:"Assistant", "Rubik", system-ui, sans-serif;
   color-scheme: light;
 }
 @media (prefers-color-scheme: dark){
   :root:not([data-theme="light"]){
-    --bg:#11161c; --surface:#1a2129; --ink:#e7edf3; --muted:#9aa7b4; --line:#2b3540;
-    --accent:#5cc3c6; --accent-soft:#16363a;
-    --basket:#6fd39a; --basket-bg:#173326;
-    --shaban:#9db2ff; --shaban-bg:#1d2747;
-    --private:#f0b65e; --private-bg:#3a2a12;
-    --book:#cfa2f2; --book-bg:#2f2140;
-    --rights:#f0a3a3; --rights-bg:#3c2020;
+    --bg:#1c1720; --surface:#26202d; --ink:#f4ebf3; --muted:#b5a8ba; --line:#3a3043;
+    --accent:#f4a6c3; --accent-soft:#3d2434; --on-accent:#2a1520;
+    --basket:#9fe0b6; --basket-bg:#1d3326;
+    --shaban:#a9cdf5; --shaban-bg:#1e2b40;
+    --private:#f5c98f; --private-bg:#3a2c18;
+    --book:#d3b8f2; --book-bg:#30243f;
+    --rights:#f5abb4; --rights-bg:#3e2226;
+    --t1:#b5627f; --t2:#4f7fae; --t3:#4f9a6c;
     color-scheme: dark;
   }
 }
 :root[data-theme="dark"]{
-  --bg:#11161c; --surface:#1a2129; --ink:#e7edf3; --muted:#9aa7b4; --line:#2b3540;
-  --accent:#5cc3c6; --accent-soft:#16363a;
-  --basket:#6fd39a; --basket-bg:#173326;
-  --shaban:#9db2ff; --shaban-bg:#1d2747;
-  --private:#f0b65e; --private-bg:#3a2a12;
-  --book:#cfa2f2; --book-bg:#2f2140;
-  --rights:#f0a3a3; --rights-bg:#3c2020;
+  --bg:#1c1720; --surface:#26202d; --ink:#f4ebf3; --muted:#b5a8ba; --line:#3a3043;
+  --accent:#f4a6c3; --accent-soft:#3d2434; --on-accent:#2a1520;
+  --basket:#9fe0b6; --basket-bg:#1d3326;
+  --shaban:#a9cdf5; --shaban-bg:#1e2b40;
+  --private:#f5c98f; --private-bg:#3a2c18;
+  --book:#d3b8f2; --book-bg:#30243f;
+  --rights:#f5abb4; --rights-bg:#3e2226;
+  --t1:#b5627f; --t2:#4f7fae; --t3:#4f9a6c;
   color-scheme: dark;
 }
 *{box-sizing:border-box}
@@ -58,16 +62,16 @@ h1{font-size:1.6rem;font-weight:700}
 .field input,.field select{font:inherit;font-size:16px;padding:9px 10px;border:1px solid var(--line);border-radius:10px;background:var(--surface);color:var(--ink)}
 .toggle{display:flex;gap:6px;margin-top:2px}
 .toggle button{font:inherit;font-size:.8rem;border:1px solid var(--line);background:var(--surface);color:var(--muted);border-radius:999px;padding:2px 10px;cursor:pointer}
-.toggle button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:#fff}
+.toggle button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
 @media (max-width:440px){.setup{grid-template-columns:1fr}}
 .status{position:sticky;top:0;z-index:5;background:var(--bg);padding:10px 0;border-bottom:1px solid var(--line)}
 .status-row{display:flex;align-items:center;justify-content:space-between;gap:10px}
 .now{display:flex;align-items:center;gap:10px;min-width:0}
-.wk{font-family:var(--display);font-weight:700;background:var(--accent);color:#fff;border-radius:12px;padding:4px 12px;font-size:1.35rem;line-height:1.2;white-space:nowrap;font-variant-numeric:tabular-nums}
+.wk{font-family:var(--display);font-weight:700;background:var(--accent);color:var(--on-accent);border-radius:12px;padding:4px 12px;font-size:1.35rem;line-height:1.2;white-space:nowrap;font-variant-numeric:tabular-nums}
 .wk span{font-size:.85rem;font-weight:500;opacity:.9}
 .nowmeta{font-size:.88rem;color:var(--muted);line-height:1.3}
 .nowmeta b{color:var(--ink);font-weight:700;display:block;font-size:.95rem}
-.btn{font:inherit;font-size:.9rem;font-weight:600;border:0;background:var(--accent);color:#fff;border-radius:10px;padding:7px 12px;cursor:pointer}
+.btn{font:inherit;font-size:.9rem;font-weight:600;border:0;background:var(--accent);color:var(--on-accent);border-radius:10px;padding:7px 12px;cursor:pointer}
 .btn:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,a:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
 .bar{height:6px;background:var(--line);border-radius:99px;margin-top:8px;overflow:hidden}
 .bar i{display:block;height:100%;background:var(--accent);border-radius:99px;width:0}
@@ -86,7 +90,7 @@ details.info li{margin:4px 0}
 .whead{display:flex;align-items:baseline;justify-content:space-between;gap:8px;padding:12px 14px 4px}
 .whead h3{font-size:1.1rem}
 .whead .dates{color:var(--muted);font-size:.85rem;font-variant-numeric:tabular-nums}
-.pill-now{background:var(--accent);color:#fff;border-radius:999px;font-size:.75rem;padding:1px 8px;margin-inline-start:6px;font-family:var(--body);font-weight:700;vertical-align:middle}
+.pill-now{background:var(--accent);color:var(--on-accent);border-radius:999px;font-size:.75rem;padding:1px 8px;margin-inline-start:6px;font-family:var(--body);font-weight:700;vertical-align:middle}
 .items{list-style:none;margin:0;padding:2px 6px 4px}
 .item{display:grid;grid-template-columns:30px 1fr;align-items:start;column-gap:6px;padding:2px 6px;border-radius:10px}
 .item + .item{border-top:1px solid var(--line)}
@@ -146,7 +150,7 @@ details.info li{margin:4px 0}
 .nav{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 0 4px}
 .tabs{display:flex;gap:4px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:3px}
 .tabs button{font:inherit;font-size:.92rem;font-weight:600;border:0;background:none;color:var(--muted);border-radius:9px;padding:6px 14px;cursor:pointer}
-.tabs button[aria-current="page"]{background:var(--accent);color:#fff}
+.tabs button[aria-current="page"]{background:var(--accent);color:var(--on-accent)}
 .me{display:flex;align-items:center;gap:8px;min-width:0}
 .avatar{width:32px;height:32px;border-radius:50%;object-fit:cover;background:var(--accent-soft);color:var(--accent);display:inline-flex;align-items:center;justify-content:center;font-weight:700;font-size:.85rem;flex:none}
 .by{font-size:.8rem;color:var(--muted);margin-top:6px}
@@ -168,6 +172,20 @@ details.info li{margin:4px 0}
 .msg{font-size:.9rem;color:var(--basket);margin-top:8px;min-height:1.2em}
 .fname{display:flex;gap:8px}
 .fname input{flex:1;min-width:0;font:inherit;font-size:16px;padding:9px 10px;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--ink)}
+
+/* pastel touches */
+body{background:linear-gradient(180deg,var(--accent-soft) 0,var(--bg) 320px) no-repeat,var(--bg)}
+.status{background:color-mix(in srgb,var(--bg) 92%,transparent);backdrop-filter:blur(6px)}
+.chip[aria-pressed="true"]{background:var(--accent);color:var(--on-accent);border-color:var(--accent)}
+.week{border-inline-start:5px solid var(--tri,var(--line))}
+.week.t1{--tri:var(--t1)} .week.t2{--tri:var(--t2)} .week.t3{--tri:var(--t3)} .week.t4{--tri:var(--book-bg)}
+.week.current{border-color:var(--accent);border-inline-start-width:5px;box-shadow:0 0 0 4px var(--accent-soft)}
+.tri.t1{color:var(--accent)} .tri.t2{color:var(--shaban)} .tri.t3{color:var(--basket)} .tri.t4{color:var(--book)}
+.wk{box-shadow:0 2px 8px color-mix(in srgb,var(--accent) 35%,transparent)}
+.bar{background:var(--accent-soft)}
+.bar i{background:linear-gradient(90deg,var(--t3),var(--t2),var(--accent))}
+.card{box-shadow:0 8px 30px color-mix(in srgb,var(--accent) 18%,transparent)}
+.btn,.gbtn,.chip,.tabs button,.toggle button{border-radius:999px}
 </style>
 </head>
 <body>
@@ -856,11 +874,11 @@ function render(){
     items = items.filter(visible); reminders = reminders.filter(visible);
     const filtering = state.filter!=="all" || state.openOnly;
     if(!items.length && !reminders.length && filtering && addingWeek!==w) continue;
-    if(tri!==lastTri){ html+=`<h2 class="tri">${TRI[tri]}</h2>`; lastTri=tri; }
+    if(tri!==lastTri){ html+=`<h2 class="tri t${tri}">${TRI[tri]}</h2>`; lastTri=tri; }
     const isCur = g && g.days>=0 && w===cur && g.w<=42;
     const past = g && w<g.w && w<43;
     const title = w===43 ? "אחרי הלידה" : "שבוע "+w;
-    html+=`<section class="week${isCur?" current":""}${past?" past":""}" id="w${w}">
+    html+=`<section class="week t${tri}${isCur?" current":""}${past?" past":""}" id="w${w}">
       <div class="whead"><h3>${title}${isCur?'<span class="pill-now">אנחנו כאן</span>':""}</h3><span class="dates">${w<43?weekRange(w):""}</span></div>`;
     if(items.length||reminders.length) html+=`<ul class="items">${items.map(i=>itemHTML(i)).join("")}${reminders.map(i=>itemHTML(i,w)).join("")}</ul>`;
     html+=addHTML(w)+`</section>`;
