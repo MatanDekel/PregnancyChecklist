@@ -316,6 +316,7 @@ body.demo .realonly,body.demo #demoPanel{display:none}
       <span id="googleBtnText">המשך עם Google</span>
     </button>
     <div class="err" id="loginError" role="alert"></div>
+    <button class="btn ghost" type="button" id="loginDemo" style="margin-top:12px;width:100%">כניסה להדגמה (בלי התחברות)</button>
   </div>
 </div>
 
@@ -874,7 +875,7 @@ $("joinAccept").onclick = async () => {
   await startApp();
 };
 $("joinDecline").onclick = async () => { clearJoin(); joinOffer = null; await startApp(); };
-$("logoutBtn").onclick = () => signOut(auth);
+$("logoutBtn").onclick = () => DEMO ? exitDemo() : signOut(auth);
 
 // ───────────── live data ─────────────
 async function startApp(){
@@ -1641,9 +1642,11 @@ function exitDemo(){
   unsubs.forEach(u=>u()); unsubs = []; demoStore.clear(); demoListeners.clear();
   DEMO = false; document.body.classList.remove("demo"); $("demoBar").classList.add("hidden");
   me = realMe; realMe = null; resetState();
+  if (!me) { family = null; show("login"); return; }   // entered from the login screen
   startApp(); setView("family");
 }
 $("demoBtn").onclick = enterDemo;
+$("loginDemo").onclick = enterDemo;
 $("demoExit").onclick = exitDemo;
 </script>
 </body>
