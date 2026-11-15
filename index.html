@@ -441,6 +441,12 @@ body.demo .realonly,body.demo #demoPanel{display:none}
     </div>
 
     <div class="panel realonly">
+      <h2>שמות בני המשפחה</h2>
+      <p class="hint">אפשר לשנות כאן את השם של כל אחד, כולל שם של בן/בת הזוג.</p>
+      <form id="memberNamesForm" data-member-names><div id="memberNamesBody"></div><button class="btn" type="submit">שמירה</button></form>
+    </div>
+
+    <div class="panel realonly">
       <h2>קישור הזמנה</h2>
       <p>שלחי את הקישור לבן הזוג. כשהוא יפתח אותו ויתחבר עם Google, הוא יצטרף למשפחה ויראה את אותה רשימה.</p>
       <div class="linkbox">
@@ -877,7 +883,7 @@ async function startApp(){
 
   unsubs.push(onSnapshot(doc(db, "families", fid), s => {
     family = s.exists() ? s.data() : { id: fid, name: "", members: [] };
-    gotFamily = true; renderMe(); renderFamily(); ready();
+    gotFamily = true; renderMe(); renderFamily(); renderMemberNames(); ready(); maybeFixOwnName();
   }, e => bootFail(e.code||e.message)));
 
   unsubs.push(onSnapshot(doc(db, "families", fid, "data", "settings"), s => {
@@ -969,6 +975,35 @@ $("fnameForm").addEventListener("submit", e => {
   const n = $("fnameInput").value.trim(); if (!n) return;
   write(() => updateDoc(doc(db, "families", me.familyId), { name: n })).then(() => { $("fnameMsg").textContent = "נשמר"; setTimeout(()=>$("fnameMsg").textContent="",2000); });
 });
+function renderMemberNames(){
+  const ms = (family && family.members) || [];
+  $("memberNamesBody").innerHTML = ms.map(m => `<label>${m.id===me.id?"השם שלי":"שם"}${m.email?` <span class="mini">${esc(m.email)}</span>`:""}<input name="m_${esc(m.id)}" maxlength="40" value="${esc(m.name)}"></label>`).join("");
+}
+document.addEventListener("submit", e => {
+  const f = e.target.closest("form[data-member-names]"); if (!f) return;
+  e.preventDefault();
+  const fd = Object.fromEntries(new FormData(f));
+  const members = ((family && family.members) || []).map(m => {
+    const v = (fd["m_"+m.id]||"").trim();
+    return v ? { ...m, name: v } : m;
+  });
+  const mine = members.find(m => m.id === me.id);
+  const tasks = [updateDoc(doc(db, "families", me.familyId), { members })];
+  if (mine && mine.name !== me.name) tasks.push(updateDoc(doc(db, "users", me.id), { name: mine.name, nameSet: true }));
+  write(() => Promise.all(tasks)).then(() => { const b=f.querySelector("button[type=submit]"); if(b){ b.textContent="נשמר ✓"; setTimeout(()=>b.textContent="שמירה",1500);} });
+});
+// one-time: the owner's account shows as עדן
+function maybeFixOwnName(){
+  if (DEMO || !me || me.nameSet) return;
+  if ((me.email||"").toLowerCase() !== "derhyeden@gmail.com") return;
+  const mem = (family && family.members) || [];
+  const members = mem.map(m => m.id===me.id ? { ...m, name: "עדן" } : m);
+  me.name = "עדן"; me.nameSet = true;
+  write(() => Promise.all([
+    updateDoc(doc(db, "users", me.id), { name: "עדן", nameSet: true }),
+    updateDoc(doc(db, "families", me.familyId), { members })
+  ]));
+}
 $("copyLink").onclick = async () => {
   try { await navigator.clipboard.writeText(inviteURL()); $("copyMsg").textContent = "הקישור הועתק"; }
   catch(e){ $("inviteLink").select(); $("copyMsg").textContent = "סמני את הקישור והעתיקי ידנית"; }
