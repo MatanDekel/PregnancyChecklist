@@ -1,0 +1,31 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() { return request.auth != null; }
+    function myEmail() { return request.auth.token.email.lower(); }
+    function myFamily() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.familyId;
+    }
+
+    // Each person's own profile (points at their family)
+    match /users/{uid} {
+      allow read, write: if signedIn() && request.auth.uid == uid;
+    }
+
+    // Email invites: the family that sent it, or the invited person, can see it
+    match /invites/{email} {
+      allow read: if signedIn() && (myEmail() == email || resource.data.familyId == myFamily());
+      allow create, update: if signedIn() && request.resource.data.familyId == myFamily();
+      allow delete: if signedIn() && (myEmail() == email || resource.data.familyId == myFamily());
+    }
+
+    // A family and everything in it: only people whose profile points at it.
+    // Joining works by pointing your own profile at the family from the invite link first.
+    match /families/{fid} {
+      allow read, create, update: if signedIn() && myFamily() == fid;
+      match /{sub=**} {
+        allow read, write: if signedIn() && myFamily() == fid;
+      }
+    }
+  }
+}

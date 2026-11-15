@@ -45,6 +45,7 @@
 }
 *{box-sizing:border-box}
 html,body{margin:0}
+.screen.hidden,#app.hidden{display:none}
 body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:17px;line-height:1.5}
 .wrap{max-width:760px;margin:0 auto;padding:0 16px 80px}
 h1,h2,h3{font-family:var(--display);text-wrap:balance;margin:0}
@@ -129,10 +130,90 @@ details.info li{margin:4px 0}
 .note a{color:var(--accent)}
 .hidden{display:none !important}
 @media (prefers-reduced-motion: no-preference){html{scroll-behavior:smooth}}
+
+/* ---- app shell: login, nav, family ---- */
+.screen{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px 16px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:28px 22px;max-width:400px;width:100%;display:flex;flex-direction:column;gap:14px;text-align:center}
+.card h1{font-size:1.5rem}
+.card p{margin:0;color:var(--muted)}
+.gbtn{font:inherit;font-weight:700;font-size:1rem;display:flex;align-items:center;justify-content:center;gap:10px;border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:12px;padding:12px 14px;cursor:pointer}
+.gbtn:disabled{opacity:.6;cursor:default}
+.banner{background:var(--accent-soft);color:var(--ink);border-radius:12px;padding:10px 12px;font-size:.95rem}
+.err{color:var(--rights);font-size:.9rem}
+.spinner{width:34px;height:34px;border-radius:50%;border:3px solid var(--line);border-top-color:var(--accent);margin:0 auto}
+@media (prefers-reduced-motion: no-preference){.spinner{animation:spin .9s linear infinite}}
+@keyframes spin{to{transform:rotate(360deg)}}
+.nav{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 0 4px}
+.tabs{display:flex;gap:4px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:3px}
+.tabs button{font:inherit;font-size:.92rem;font-weight:600;border:0;background:none;color:var(--muted);border-radius:9px;padding:6px 14px;cursor:pointer}
+.tabs button[aria-current="page"]{background:var(--accent);color:#fff}
+.me{display:flex;align-items:center;gap:8px;min-width:0}
+.avatar{width:32px;height:32px;border-radius:50%;object-fit:cover;background:var(--accent-soft);color:var(--accent);display:inline-flex;align-items:center;justify-content:center;font-weight:700;font-size:.85rem;flex:none}
+.by{font-size:.8rem;color:var(--muted);margin-top:6px}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px;margin:14px 0}
+.panel h2{font-size:1.1rem;margin-bottom:10px}
+.panel p{margin:0 0 10px;color:var(--muted);font-size:.95rem}
+.members{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px}
+.members li{display:flex;align-items:center;gap:10px}
+.members .who{flex:1;min-width:0}
+.members .who b{display:block}
+.members .who span{color:var(--muted);font-size:.85rem;overflow-wrap:anywhere}
+.role{font-size:.8rem;color:var(--muted);white-space:nowrap}
+.linkbox{display:flex;gap:8px;flex-wrap:wrap}
+.linkbox input{flex:1 1 220px;min-width:0;font:inherit;font-size:14px;padding:9px 10px;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--ink);direction:ltr}
+.inviteform{display:flex;gap:8px;flex-wrap:wrap}
+.inviteform input{flex:1 1 220px;min-width:0;font:inherit;font-size:16px;padding:9px 10px;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--ink);direction:ltr;text-align:right}
+.pending{list-style:none;margin:10px 0 0;padding:0;font-size:.9rem;color:var(--muted)}
+.pending li{display:flex;justify-content:space-between;gap:8px;padding:4px 0;direction:ltr}
+.msg{font-size:.9rem;color:var(--basket);margin-top:8px;min-height:1.2em}
+.fname{display:flex;gap:8px}
+.fname input{flex:1;min-width:0;font:inherit;font-size:16px;padding:9px 10px;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--ink)}
 </style>
 </head>
 <body>
+<div id="splash" class="screen"><div class="spinner" role="status" aria-label="טוען"></div></div>
+
+<div id="bootError" class="screen hidden">
+  <div class="card">
+    <h1>משהו השתבש בטעינה</h1>
+    <p id="bootErrorText">נסי לרענן את הדף.</p>
+    <button class="btn" type="button" onclick="location.reload()">רענון</button>
+  </div>
+</div>
+
+<div id="login" class="screen hidden">
+  <div class="card">
+    <h1>ההריון שלנו, שבוע אחר שבוע</h1>
+    <p>בדיקות, תורים, זכויות והחזרים מהקופה. רשימה משותפת לך ולבן הזוג.</p>
+    <div class="banner hidden" id="inviteBanner">הוזמנת להצטרף למשפחה! התחברו כדי להצטרף.</div>
+    <button class="gbtn" type="button" id="googleBtn">
+      <svg width="20" height="20" viewBox="0 0 48 48" aria-hidden="true"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.3 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.9 1.2 8 3.1l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.9 1.2 8 3.1l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.3 0-9.7-3.3-11.3-8l-6.5 5C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.4-.4-3.5z"/></svg>
+      <span id="googleBtnText">המשך עם Google</span>
+    </button>
+    <div class="err" id="loginError" role="alert"></div>
+  </div>
+</div>
+
+<div id="joinPrompt" class="screen hidden">
+  <div class="card">
+    <h1>הוזמנת למשפחה!</h1>
+    <p>להצטרף למשפחה? תראו ותסמנו את אותה רשימה. תעזבו את המשפחה הנוכחית שלכם.</p>
+    <button class="btn" type="button" id="joinAccept">הצטרפות</button>
+    <button class="btn ghost" type="button" id="joinDecline">לא עכשיו</button>
+    <div class="err" id="joinError" role="alert"></div>
+  </div>
+</div>
+
+<div id="app" class="hidden">
 <div class="wrap">
+  <nav class="nav" aria-label="ניווט">
+    <div class="tabs">
+      <button type="button" data-view="list" aria-current="page">הצ׳ק ליסט</button>
+      <button type="button" data-view="family">משפחה</button>
+    </div>
+    <div class="me" id="meBox"></div>
+  </nav>
+
   <div class="status" id="status">
     <div class="status-row">
       <div class="now" id="nowText"><span class="wk">שבוע ?</span><span class="nowmeta">הזיני תאריך למטה</span></div>
@@ -140,60 +221,138 @@ details.info li{margin:4px 0}
     </div>
     <div class="bar" aria-hidden="true"><i id="barFill"></i></div>
   </div>
-  <header class="top">
-    <h1>ההריון שלי, שבוע אחר שבוע</h1>
-    <p class="sub">בדיקות, תורים שצריך לקבוע מראש, זכויות והחזרים, לפי מסלול המעקב בישראל.</p>
-    <div class="setup">
-      <div class="field">
-        <label for="dateInput" id="dateLabel">תאריך הווסת האחרונה</label>
-        <input type="date" id="dateInput">
-        <div class="toggle" role="group" aria-label="סוג תאריך">
-          <button type="button" id="modeLmp" aria-pressed="true">וסת אחרונה</button>
-          <button type="button" id="modeEdd" aria-pressed="false">תאריך לידה משוער</button>
+
+  <section id="listView">
+    <header class="top">
+      <div class="setup">
+        <div class="field">
+          <label for="dateInput" id="dateLabel">תאריך הווסת האחרונה</label>
+          <input type="date" id="dateInput">
+          <div class="toggle" role="group" aria-label="סוג תאריך">
+            <button type="button" id="modeLmp" aria-pressed="true">וסת אחרונה</button>
+            <button type="button" id="modeEdd" aria-pressed="false">תאריך לידה משוער</button>
+          </div>
+        </div>
+        <div class="field">
+          <label for="kupa">קופת חולים (ביטוח משלים)</label>
+          <select id="kupa">
+            <option value="">לא נבחרה</option>
+            <option value="clalit">כללית (מושלם פלטינום)</option>
+            <option value="maccabi">מכבי (מכבי שלי)</option>
+            <option value="meuhedet">מאוחדת (שיא)</option>
+            <option value="leumit">לאומית (זהב)</option>
+          </select>
         </div>
       </div>
-      <div class="field">
-        <label for="kupa">קופת חולים (ביטוח משלים)</label>
-        <select id="kupa">
-          <option value="">לא נבחרה</option>
-          <option value="clalit">כללית (מושלם פלטינום)</option>
-          <option value="maccabi">מכבי (מכבי שלי)</option>
-          <option value="meuhedet">מאוחדת (שיא)</option>
-          <option value="leumit">לאומית (זהב)</option>
-        </select>
+    </header>
+
+    <div class="chips" role="group" aria-label="סינון">
+      <button class="chip" data-f="all" aria-pressed="true">הכול</button>
+      <button class="chip" data-f="test" aria-pressed="false">בדיקות</button>
+      <button class="chip" data-f="book" aria-pressed="false">לקבוע תור</button>
+      <button class="chip" data-f="rights" aria-pressed="false">זכויות וכסף</button>
+      <button class="chip" data-f="prep" aria-pressed="false">הכנות</button>
+      <button class="chip" data-f="custom" aria-pressed="false">המשימות שלנו</button>
+      <button class="chip" id="openOnly" aria-pressed="false">רק מה שפתוח</button>
+    </div>
+
+    <details class="info" id="shabanInfo">
+      <summary>איך עובדים ההחזרים מהקופה</summary>
+      <div id="shabanBody"></div>
+      <div class="legend">
+        <span class="tag basket">בסל · חינם דרך הקופה</span>
+        <span class="tag shaban">החזר מסל ההריון בשב״ן</span>
+        <span class="tag private">פרטי / לפי התוויה</span>
+        <span class="tag book">לקבוע תור מראש</span>
+        <span class="tag rights">זכויות</span>
       </div>
+    </details>
+
+    <main id="weeks"></main>
+
+    <p class="note">המידע כאן כללי ומבוסס על המלצות משרד הבריאות ופרסומי הקופות (נבדק בנובמבר 2026). הרופא/ה והאחות שלך קובעים מה מתאים לך, ותנאי ההחזר המדויקים מופיעים בתקנון השב״ן של הקופה.</p>
+    <p class="sync" id="sync"></p>
+  </section>
+
+  <section id="familyView" class="hidden">
+    <div class="panel">
+      <h2>שם המשפחה</h2>
+      <form class="fname" id="fnameForm">
+        <label class="hidden" for="fnameInput">שם המשפחה</label>
+        <input id="fnameInput" maxlength="60">
+        <button class="btn" type="submit">שמירה</button>
+      </form>
+      <div class="msg" id="fnameMsg"></div>
     </div>
-  </header>
 
-  <div class="chips" role="group" aria-label="סינון">
-    <button class="chip" data-f="all" aria-pressed="true">הכול</button>
-    <button class="chip" data-f="test" aria-pressed="false">בדיקות</button>
-    <button class="chip" data-f="book" aria-pressed="false">לקבוע תור</button>
-    <button class="chip" data-f="rights" aria-pressed="false">זכויות וכסף</button>
-    <button class="chip" data-f="prep" aria-pressed="false">הכנות</button>
-    <button class="chip" data-f="custom" aria-pressed="false">המשימות שלי</button>
-    <button class="chip" id="openOnly" aria-pressed="false">רק מה שפתוח</button>
-  </div>
-
-  <details class="info" id="shabanInfo">
-    <summary>איך עובדים ההחזרים מהקופה</summary>
-    <div id="shabanBody"></div>
-    <div class="legend">
-      <span class="tag basket">בסל · חינם דרך הקופה</span>
-      <span class="tag shaban">החזר מסל ההריון בשב״ן</span>
-      <span class="tag private">פרטי / לפי התוויה</span>
-      <span class="tag book">לקבוע תור מראש</span>
-      <span class="tag rights">זכויות</span>
+    <div class="panel">
+      <h2>בני המשפחה</h2>
+      <ul class="members" id="membersList"></ul>
     </div>
-  </details>
 
-  <main id="weeks"></main>
+    <div class="panel">
+      <h2>קישור הזמנה</h2>
+      <p>שלחי את הקישור לבן הזוג. כשהוא יפתח אותו ויתחבר עם Google, הוא יצטרף למשפחה ויראה את אותה רשימה.</p>
+      <div class="linkbox">
+        <label class="hidden" for="inviteLink">קישור הזמנה</label>
+        <input id="inviteLink" readonly>
+        <button class="btn" type="button" id="copyLink">העתקה</button>
+        <a class="btn" id="waLink" href="#" target="_blank" rel="noopener" style="text-decoration:none">שליחה בוואטסאפ</a>
+      </div>
+      <div class="msg" id="copyMsg"></div>
+    </div>
 
-  <p class="note">המידע כאן כללי ומבוסס על המלצות משרד הבריאות ופרסומי הקופות (נבדק בנובמבר 2026). הרופא/ה והאחות שלך קובעים מה מתאים לך, ותנאי ההחזר המדויקים מופיעים בתקנון השב״ן של הקופה. </p>
-  <p class="sync" id="sync">הסימונים והמשימות שלך נשמרים בדפדפן הזה.</p>
+    <div class="panel">
+      <h2>הזמנה לפי אימייל</h2>
+      <p>כשהוא יתחבר בפעם הראשונה עם האימייל הזה, הוא יצטרף למשפחה אוטומטית.</p>
+      <form class="inviteform" id="inviteForm">
+        <label class="hidden" for="inviteEmail">אימייל</label>
+        <input id="inviteEmail" type="email" placeholder="name@gmail.com" required>
+        <button class="btn" type="submit">הזמנה</button>
+      </form>
+      <div class="msg" id="inviteMsg" role="status"></div>
+      <ul class="pending" id="pendingList"></ul>
+    </div>
+
+    <div class="panel">
+      <button class="btn ghost" type="button" id="logoutBtn">התנתקות</button>
+    </div>
+  </section>
+</div>
 </div>
 
-<script>
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-app.js";
+import { getAnalytics, isSupported } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-analytics.js";
+import {
+  initializeAuth, indexedDBLocalPersistence, browserLocalPersistence, browserPopupRedirectResolver,
+  GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, onAuthStateChanged, signOut
+} from "https://www.gstatic.com/firebasejs/11.0.0/firebase-auth.js";
+import {
+  initializeFirestore, doc, getDoc, setDoc, updateDoc, deleteDoc, collection, query, where,
+  onSnapshot, serverTimestamp, deleteField, arrayUnion
+} from "https://www.gstatic.com/firebasejs/11.0.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyBB8OajirIyq_SJy8J1mHLD9BLmTy8oT2c",
+  // On the live site, sign-in goes through our own domain (proxied to Firebase in vercel.json).
+  // Needed for Google sign-in on iPhone, where Safari blocks cross-site login storage.
+  authDomain: location.hostname.endsWith(".vercel.app") ? location.hostname : "dekelpregnancychecklist.firebaseapp.com",
+  projectId: "dekelpregnancychecklist",
+  storageBucket: "dekelpregnancychecklist.firebasestorage.app",
+  messagingSenderId: "929559019041",
+  appId: "1:929559019041:web:3279cc7a0bb99f3239ad60",
+  measurementId: "G-PVK80VWCT7"
+};
+const fbApp = initializeApp(firebaseConfig);
+isSupported().then(ok => { if (ok) getAnalytics(fbApp); }).catch(()=>{});
+const auth = initializeAuth(fbApp, {
+  persistence: [indexedDBLocalPersistence, browserLocalPersistence],
+  popupRedirectResolver: browserPopupRedirectResolver,
+});
+const db = initializeFirestore(fbApp, { experimentalForceLongPolling: true });
+const googleProvider = new GoogleAuthProvider();
+
 const KUPOT = {
   clalit:  {short:"כללית מושלם פלטינום", cap:"75% מההוצאה, עד תקרת סל ההריון. את הסכום המעודכן בדקי באתר כללית."},
   maccabi: {short:"מכבי שלי", cap:"75% מההוצאה, עד כ־2,359 ₪ לכל הריון (נכון ליולי 2026), עד ארבעה הריונות. מכבי זהב וכסף לא כוללות את החבילה."},
@@ -329,58 +488,268 @@ const ITEMS = [
    d:"בטיפת חלב יש מעקב גדילה וחיסוני שגרה, כולל ההגנה מפני RSV לתינוקות."}
 ];
 
+
+
 const WEEK_MIN = 4, WEEK_MAX = 43; // 43 = after birth
 const MS_DAY = 86400000;
-const LS_KEY = "preg-v1";
-const store = (()=>{ try{ return JSON.parse(localStorage.getItem(LS_KEY)||"{}"); }catch(e){ return {}; } })();
-const state = { mode: store.mode||"lmp", date: store.date||"", kupa: store.kupa||"", done: store.done||{}, custom: store.custom||[], updatedAt: store.updatedAt||0, filter:"all", openOnly:false };
+const $ = id => document.getElementById(id);
+
+// ───────────── screens ─────────────
+const SCREENS = ["splash","bootError","login","joinPrompt","app"];
+function show(name){ SCREENS.forEach(s => $(s).classList.toggle("hidden", s!==name)); }
+
+// ───────────── state ─────────────
+let me = null;            // users/{uid} doc
+let family = null;        // families/{fid} doc
+const state = { mode:"lmp", date:"", kupa:"", done:{}, custom:[], filter:"all", openOnly:false };
 const expanded = new Set();
 let addingWeek = null;
+let unsubs = [];
+let joinOffer = null;
 
-/* ---- saving: browser first, then the person's private space in the artifact db ---- */
-let db=null, uid=null, writing=false, again=false, saveTimer=null;
-function payload(){ return {mode:state.mode,date:state.date,kupa:state.kupa,done:state.done,custom:state.custom,updatedAt:state.updatedAt}; }
-function setSync(t){ document.getElementById("sync").textContent=t; }
-function save(){
-  state.updatedAt = Date.now();
-  try{ localStorage.setItem(LS_KEY, JSON.stringify(payload())); }catch(e){}
-  clearTimeout(saveTimer); saveTimer=setTimeout(flush, 700);
+function uid(){ return Date.now().toString(36) + Math.random().toString(36).slice(2,8); }
+function firstName(n){ return (n||"").trim().split(" ")[0] || ""; }
+function esc(s){ return String(s ?? "").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
+function avatarHTML(u){
+  return u && u.avatar
+    ? `<img class="avatar" src="${esc(u.avatar)}" alt="" referrerpolicy="no-referrer">`
+    : `<span class="avatar" aria-hidden="true">${esc((u?.name||"?").trim()[0]||"?")}</span>`;
 }
-async function flush(retried){
-  if(!db||!uid) return;
-  if(writing){ again=true; return; }
-  writing=true;
-  try{ await db.doc("data/users/"+uid+"/state").set(JSON.parse(JSON.stringify(payload()))); setSync("נשמר בחשבון שלך, ומסונכרן בין המכשירים."); }
-  catch(e){
-    if(e && e.code==="unavailable" && !retried){ writing=false; setTimeout(()=>flush(true), 800+Math.random()*800); return; }
-    setSync("לא הצלחתי לשמור בחשבון כרגע. השינויים נשמרו בדפדפן הזה.");
-  }
-  writing=false;
-  if(again){ again=false; flush(); }
-}
-function applyRemote(r){
-  state.mode=r.mode||"lmp"; state.date=r.date||""; state.kupa=r.kupa||"";
-  state.done=r.done||{}; state.custom=Array.isArray(r.custom)?r.custom:[]; state.updatedAt=r.updatedAt||0;
-  try{ localStorage.setItem(LS_KEY, JSON.stringify(payload())); }catch(e){}
-  di.value=state.date; ks.value=state.kupa; syncMode(); render();
-}
-(async()=>{
-  try{
-    if(!window.claude || typeof window.claude.use!=="function") return;
-    const [d,u] = await Promise.all([window.claude.use("db"), window.claude.use("user")]);
-    if(!d||!u) return;
-    const id = await u.id(); if(!id) return;
-    db=d; uid=id;
-    const timer=setTimeout(()=>setSync("החשבון לא זמין כרגע. השינויים נשמרים בדפדפן הזה."),10000);
-    const snap = await db.doc("data/users/"+uid+"/state").get();
-    clearTimeout(timer);
-    const r = snap.exists ? snap.data() : null;
-    if(r && (r.updatedAt||0) >= state.updatedAt){ applyRemote(r); setSync("נשמר בחשבון שלך, ומסונכרן בין המכשירים."); }
-    else if(state.date || Object.keys(state.done).length || state.custom.length){ flush(); }
-    else setSync("נשמר בחשבון שלך, ומסונכרן בין המכשירים.");
-  }catch(e){}
+
+// ───────────── invite link capture ─────────────
+(() => {
+  const p = new URLSearchParams(location.search).get("join");
+  if (p) { try{ localStorage.setItem("preg:join", p); }catch(e){} history.replaceState({}, "", location.pathname); }
 })();
+const pendingJoin = () => { try{ return localStorage.getItem("preg:join"); }catch(e){ return null; } };
+const clearJoin = () => { try{ localStorage.removeItem("preg:join"); }catch(e){} };
 
+// ───────────── login ─────────────
+getRedirectResult(auth).catch(e => { $("loginError").textContent = "ההתחברות עם Google נכשלה. נסי שוב. (" + (e.code||e.message) + ")"; });
+$("googleBtn").onclick = async () => {
+  $("loginError").textContent = ""; $("googleBtn").disabled = true; $("googleBtnText").textContent = "מתחבר…";
+  const standalone = matchMedia?.("(display-mode: standalone)").matches || navigator.standalone;
+  const ios = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform==="MacIntel" && navigator.maxTouchPoints>1);
+  try {
+    if (standalone || ios) { await signInWithRedirect(auth, googleProvider); return; }
+    await signInWithPopup(auth, googleProvider);
+  } catch(e) {
+    $("loginError").textContent = "ההתחברות עם Google נכשלה. נסי שוב. (" + (e.code||e.message) + ")";
+    $("googleBtn").disabled = false; $("googleBtnText").textContent = "המשך עם Google";
+  }
+};
+
+// ───────────── boot ─────────────
+let bootStep = "auth";
+const bootTimer = setTimeout(() => { if (!$("splash").classList.contains("hidden")) bootFail("timeout:"+bootStep); }, 12000);
+function bootFail(err){ $("bootErrorText").textContent = "נסי לרענן את הדף. (" + err + ")"; show("bootError"); }
+
+onAuthStateChanged(auth, async (fu) => {
+  try {
+    unsubs.forEach(u=>u()); unsubs = [];
+    if (!fu) {
+      clearTimeout(bootTimer);
+      me = null; family = null;
+      $("inviteBanner").classList.toggle("hidden", !pendingJoin());
+      $("googleBtn").disabled = false; $("googleBtnText").textContent = "המשך עם Google";
+      show("login"); return;
+    }
+    bootStep = "profile";
+    const userRef = doc(db, "users", fu.uid);
+    const snap = await getDoc(userRef);
+    const join = pendingJoin();
+
+    if (snap.exists()) {
+      me = { id: fu.uid, ...snap.data() };
+      if (join && join !== me.familyId) { joinOffer = join; clearTimeout(bootTimer); show("joinPrompt"); return; }
+      clearJoin();
+      await startApp();
+      return;
+    }
+
+    // first login
+    bootStep = "new-user";
+    const email = (fu.email||"").toLowerCase();
+    let target = join;
+    if (!target && email) {
+      try { const inv = await getDoc(doc(db, "invites", email)); if (inv.exists()) target = inv.data().familyId; } catch(e){}
+    }
+    me = {
+      id: fu.uid, name: fu.displayName || email.split("@")[0], email,
+      avatar: fu.photoURL || "", familyId: target || uid(), createdAt: serverTimestamp()
+    };
+    await setDoc(userRef, me);
+    if (target) {
+      const ok = await addSelfToFamily(me, target);
+      clearJoin();
+      if (ok) { try{ await deleteDoc(doc(db, "invites", email)); }catch(e){} await startApp(); return; }
+      me.familyId = uid();
+      await updateDoc(userRef, { familyId: me.familyId });
+    }
+    await createFamily(me);
+    await startApp();
+  } catch(err) {
+    console.error("Startup failed:", err);
+    clearTimeout(bootTimer);
+    bootFail(err?.code || err?.message || String(err));
+  }
+});
+
+async function addSelfToFamily(u, fid){
+  try {
+    const ref = doc(db, "families", fid);
+    const fs = await getDoc(ref);
+    if (!fs.exists()) return false;
+    const members = (fs.data().members||[]).filter(m=>m.id!==u.id);
+    members.push({ id:u.id, name:u.name, email:u.email, avatar:u.avatar||"", role:"member" });
+    await updateDoc(ref, { members });
+    return true;
+  } catch(e){ return false; }
+}
+
+async function createFamily(u){
+  const fid = u.familyId;
+  await setDoc(doc(db, "families", fid), {
+    id: fid, name: `המשפחה של ${firstName(u.name)}`,
+    members: [{ id:u.id, name:u.name, email:u.email, avatar:u.avatar||"", role:"owner" }],
+    createdAt: serverTimestamp(),
+  });
+  // Bring over anything saved in this browser before sign-in existed
+  let local = {};
+  try { local = JSON.parse(localStorage.getItem("preg-v1")||"{}"); } catch(e){}
+  await setDoc(doc(db, "families", fid, "data", "settings"), {
+    mode: local.mode||"lmp", date: local.date||"", kupa: local.kupa||"", updatedAt: Date.now()
+  });
+  const items = {};
+  Object.keys(local.done||{}).forEach(id => { items[id] = { by: u.name, at: Date.now() }; });
+  await setDoc(doc(db, "families", fid, "data", "done"), { items });
+  for (const c of (local.custom||[])) {
+    if (!c || !c.id || !c.t) continue;
+    await setDoc(doc(db, "families", fid, "tasks", c.id), { w:c.w, t:c.t, d:c.d||"", by:u.name, createdAt: Date.now() });
+  }
+}
+
+$("joinAccept").onclick = async () => {
+  $("joinAccept").disabled = true; $("joinAccept").textContent = "מצטרפים…"; $("joinError").textContent = "";
+  const oldFid = me.familyId;
+  try {
+    const old = await getDoc(doc(db, "families", oldFid));
+    if (old.exists()) await updateDoc(doc(db, "families", oldFid), { members: (old.data().members||[]).filter(m=>m.id!==me.id) });
+  } catch(e){}
+  await updateDoc(doc(db, "users", me.id), { familyId: joinOffer });
+  const ok = await addSelfToFamily(me, joinOffer);
+  if (!ok) {
+    await updateDoc(doc(db, "users", me.id), { familyId: oldFid });
+    try { await updateDoc(doc(db, "families", oldFid), { members: arrayUnion({ id:me.id, name:me.name, email:me.email, avatar:me.avatar||"", role:"owner" }) }); } catch(e){}
+    $("joinError").textContent = "קישור ההזמנה כבר לא בתוקף.";
+    $("joinAccept").disabled = false; $("joinAccept").textContent = "הצטרפות";
+    return;
+  }
+  clearJoin();
+  me.familyId = joinOffer; joinOffer = null;
+  $("joinAccept").disabled = false; $("joinAccept").textContent = "הצטרפות";
+  await startApp();
+};
+$("joinDecline").onclick = async () => { clearJoin(); joinOffer = null; await startApp(); };
+$("logoutBtn").onclick = () => signOut(auth);
+
+// ───────────── live data ─────────────
+async function startApp(){
+  bootStep = "family";
+  const fid = me.familyId;
+  let gotFamily = false, gotSettings = false;
+  const ready = () => { if (gotFamily && gotSettings) { clearTimeout(bootTimer); if ($("app").classList.contains("hidden")) { show("app"); scrollToCurrent(); } } };
+
+  unsubs.push(onSnapshot(doc(db, "families", fid), s => {
+    family = s.exists() ? s.data() : { id: fid, name: "", members: [] };
+    gotFamily = true; renderMe(); renderFamily(); ready();
+  }, e => bootFail(e.code||e.message)));
+
+  unsubs.push(onSnapshot(doc(db, "families", fid, "data", "settings"), s => {
+    const d = s.exists() ? s.data() : {};
+    state.mode = d.mode||"lmp"; state.date = d.date||""; state.kupa = d.kupa||"";
+    if (document.activeElement !== $("dateInput")) $("dateInput").value = state.date;
+    $("kupa").value = state.kupa; syncMode();
+    gotSettings = true; rerender(); ready();
+  }, e => bootFail(e.code||e.message)));
+
+  unsubs.push(onSnapshot(doc(db, "families", fid, "data", "done"), s => {
+    state.done = (s.exists() && s.data().items) || {};
+    rerender();
+  }, e => setSync("לא הצלחתי לטעון סימונים: " + (e.code||e.message))));
+
+  unsubs.push(onSnapshot(collection(db, "families", fid, "tasks"), s => {
+    state.custom = s.docs.map(d => ({ id: d.id, ...d.data() })).sort((a,b)=>(a.createdAt||0)-(b.createdAt||0));
+    rerender();
+  }, e => setSync("לא הצלחתי לטעון משימות: " + (e.code||e.message))));
+
+  unsubs.push(onSnapshot(query(collection(db, "invites"), where("familyId","==",fid)), s => {
+    $("pendingList").innerHTML = s.docs.map(d => `<li><span>${esc(d.id)}</span><button class="link" data-uninvite="${esc(d.id)}">ביטול</button></li>`).join("");
+  }, () => {}));
+
+  setSync("הכול נשמר ומסונכרן עם בני המשפחה.");
+}
+
+function setSync(t){ $("sync").textContent = t; }
+async function write(fn){
+  try { await fn(); setSync("הכול נשמר ומסונכרן עם בני המשפחה."); }
+  catch(e){ console.error(e); setSync("השמירה נכשלה (" + (e.code||e.message) + "). בדקי את החיבור ונסי שוב."); }
+}
+function saveSettings(){
+  const fid = me.familyId;
+  write(() => setDoc(doc(db, "families", fid, "data", "settings"), { mode: state.mode, date: state.date, kupa: state.kupa, updatedAt: Date.now() }, { merge: true }));
+}
+function setDone(id, on){
+  const fid = me.familyId;
+  if (on) state.done[id] = { by: me.name, at: Date.now() }; else delete state.done[id];
+  rerender();
+  write(() => setDoc(doc(db, "families", fid, "data", "done"), { items: { [id]: on ? { by: me.name, at: Date.now() } : deleteField() } }, { merge: true }));
+}
+
+// ───────────── header / family page ─────────────
+function renderMe(){
+  $("meBox").innerHTML = avatarHTML(me);
+  $("meBox").title = me?.name || "";
+}
+function inviteURL(){ return location.origin + location.pathname + "?join=" + encodeURIComponent(me.familyId); }
+function renderFamily(){
+  if (!family) return;
+  if (document.activeElement !== $("fnameInput")) $("fnameInput").value = family.name || "";
+  $("membersList").innerHTML = (family.members||[]).map(m => `<li>${avatarHTML(m)}<div class="who"><b>${esc(m.name)}${m.id===me.id?" (את/ה)":""}</b><span>${esc(m.email)}</span></div><span class="role">${m.role==="owner"?"👑 מנהל/ת":"👤 חבר/ה"}</span></li>`).join("");
+  $("inviteLink").value = inviteURL();
+  const msg = `מצטרף/ת לצ׳ק ליסט ההריון של "${family.name||"המשפחה"}"? ${inviteURL()}`;
+  $("waLink").href = "https://wa.me/?text=" + encodeURIComponent(msg);
+}
+$("fnameForm").addEventListener("submit", e => {
+  e.preventDefault();
+  const n = $("fnameInput").value.trim(); if (!n) return;
+  write(() => updateDoc(doc(db, "families", me.familyId), { name: n })).then(() => { $("fnameMsg").textContent = "נשמר"; setTimeout(()=>$("fnameMsg").textContent="",2000); });
+});
+$("copyLink").onclick = async () => {
+  try { await navigator.clipboard.writeText(inviteURL()); $("copyMsg").textContent = "הקישור הועתק"; }
+  catch(e){ $("inviteLink").select(); $("copyMsg").textContent = "סמני את הקישור והעתיקי ידנית"; }
+  setTimeout(()=>$("copyMsg").textContent="",2500);
+};
+$("inviteForm").addEventListener("submit", async e => {
+  e.preventDefault();
+  const email = $("inviteEmail").value.trim().toLowerCase();
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { $("inviteMsg").textContent = "האימייל לא תקין"; return; }
+  try {
+    await setDoc(doc(db, "invites", email), { familyId: me.familyId, invitedBy: me.name, createdAt: serverTimestamp() });
+    $("inviteMsg").textContent = `ההזמנה נשמרה! כש־${email} יתחבר, הוא יצטרף למשפחה.`;
+    $("inviteEmail").value = "";
+  } catch(err) { $("inviteMsg").textContent = "לא הצלחתי לשמור את ההזמנה (" + (err.code||err.message) + ")"; }
+});
+
+document.querySelectorAll(".tabs button").forEach(b => b.onclick = () => setView(b.dataset.view));
+function setView(v){
+  document.querySelectorAll(".tabs button").forEach(b => { if (b.dataset.view===v) b.setAttribute("aria-current","page"); else b.removeAttribute("aria-current"); });
+  $("listView").classList.toggle("hidden", v!=="list");
+  $("familyView").classList.toggle("hidden", v!=="family");
+  window.scrollTo(0,0);
+}
+
+// ───────────── checklist ─────────────
 function allItems(){ return ITEMS.concat(state.custom.map(c=>({...c, type:"custom"}))); }
 const byId = Object.fromEntries(ITEMS.map(i=>[i.id,i]));
 const bookingsFor = {}; ITEMS.forEach(i=>{ if(i.forId){ (bookingsFor[i.forId] ||= []).push(i); } });
@@ -395,7 +764,6 @@ function today(){ const n=new Date(); return new Date(n.getFullYear(),n.getMonth
 function ga(){ const l=lmpDate(); if(!l) return null; const days=Math.round((today()-l)/MS_DAY); return {w:Math.floor(days/7), d:days%7, days}; }
 const fmt = new Intl.DateTimeFormat("he-IL",{day:"numeric",month:"short"});
 function weekRange(w){ const l=lmpDate(); if(!l) return ""; const s=new Date(l.getTime()+w*7*MS_DAY), e=new Date(s.getTime()+6*MS_DAY); return fmt.format(s)+" – "+fmt.format(e); }
-function esc(s){ return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
 
 function costTags(it){
   const k = KUPOT[state.kupa];
@@ -409,7 +777,7 @@ function costTags(it){
 function typeTag(it){
   if(it.type==="book") return `<span class="tag book">לקבוע תור</span>`;
   if(it.type==="rights") return `<span class="tag rights">זכויות וכסף</span>`;
-  if(it.type==="custom") return `<span class="tag custom">משימה שלי</span>`;
+  if(it.type==="custom") return `<span class="tag custom">משימה שלנו</span>`;
   return "";
 }
 function dotClass(it){
@@ -432,13 +800,14 @@ function linkedLine(it){
   const bs = bookingsFor[it.id];
   if(bs && bs.length){
     const b=bs[0];
-    if(state.done[b.id]) return `<div class="linked ok">✓ סימנת שקבעת תור (בשבוע ${b.w})</div>`;
-    return `<div class="linked warn">עוד לא סימנת שקבעת תור · <button class="link" data-jump="${b.w}">לשבוע ${b.w}</button></div>`;
+    if(state.done[b.id]) return `<div class="linked ok">✓ סומן שנקבע תור (בשבוע ${b.w})</div>`;
+    return `<div class="linked warn">עוד לא סומן שנקבע תור · <button class="link" data-jump="${b.w}">לשבוע ${b.w}</button></div>`;
   }
   return "";
 }
 function itemHTML(it, reminder){
-  const done = !!state.done[it.id];
+  const doneRec = state.done[it.id];
+  const done = !!doneRec;
   const key = it.id + (reminder ? "@"+reminder : "");
   const open = expanded.has(key);
   const isCustom = it.type==="custom";
@@ -447,12 +816,15 @@ function itemHTML(it, reminder){
   const cid = "c-"+key.replace("@","-r");
   const title = isCustom ? esc(it.t) : it.t;
   const dc = dotClass(it);
+  const who = [];
+  if (isCustom && it.by) who.push(`נוספה ע״י ${esc(firstName(it.by))}`);
+  if (done && doneRec.by) who.push(`סומנה ע״י ${esc(firstName(doneRec.by))}`);
   const body = reminder
     ? `<div class="d">החלון נסגר בשבוע ${it.end}. הפרטים המלאים מופיעים ב<button class="link" data-jump="${it.w}">שבוע ${it.w}</button>.</div>`
-    : `${d?`<div class="d">${d}</div>`:""}<div class="tags">${typeTag(it)}${winTag(it)}${costTags(it)}</div>${linkedLine(it)}${isCustom?`<button class="del" data-del="${it.id}">מחיקת המשימה</button>`:""}`;
+    : `${d?`<div class="d">${d}</div>`:""}<div class="tags">${typeTag(it)}${winTag(it)}${costTags(it)}</div>${linkedLine(it)}${who.length?`<div class="by">${who.join(" · ")}</div>`:""}${isCustom?`<button class="del" data-del="${esc(it.id)}">מחיקת המשימה</button>`:""}`;
   return `<li class="item${done?" done":""}${reminder?" reminder":""}">
-    <input type="checkbox" id="${cid}" data-id="${it.id}" ${done?"checked":""} aria-label="${title.replace(/"/g,"&quot;")}">
-    <button class="row" type="button" data-key="${key}" aria-expanded="${open}" aria-controls="m-${cid}">
+    <input type="checkbox" id="${cid}" data-id="${esc(it.id)}" ${done?"checked":""} aria-label="${String(title).replace(/"/g,"&quot;")}">
+    <button class="row" type="button" data-key="${esc(key)}" aria-expanded="${open}" aria-controls="m-${cid}">
       <span class="t">${title}</span>${dc?`<span class="dot ${dc}" aria-hidden="true"></span>`:""}<span class="chev" aria-hidden="true">▾</span>
     </button>
     <div class="more" id="m-${cid}" ${open?"":"hidden"}>${body}</div></li>`;
@@ -474,7 +846,6 @@ function addHTML(w){
 function render(){
   const g = ga();
   const cur = g ? Math.min(Math.max(g.w,WEEK_MIN),42) : null;
-  const main = document.getElementById("weeks");
   const all = allItems();
   let html="", lastTri=0;
   for(let w=WEEK_MIN; w<=WEEK_MAX; w++){
@@ -490,14 +861,14 @@ function render(){
     const past = g && w<g.w && w<43;
     const title = w===43 ? "אחרי הלידה" : "שבוע "+w;
     html+=`<section class="week${isCur?" current":""}${past?" past":""}" id="w${w}">
-      <div class="whead"><h3>${title}${isCur?'<span class="pill-now">את כאן</span>':""}</h3><span class="dates">${w<43?weekRange(w):""}</span></div>`;
+      <div class="whead"><h3>${title}${isCur?'<span class="pill-now">אנחנו כאן</span>':""}</h3><span class="dates">${w<43?weekRange(w):""}</span></div>`;
     if(items.length||reminders.length) html+=`<ul class="items">${items.map(i=>itemHTML(i)).join("")}${reminders.map(i=>itemHTML(i,w)).join("")}</ul>`;
     html+=addHTML(w)+`</section>`;
   }
-  main.innerHTML = html;
-  if(addingWeek!==null){ const f=document.getElementById("nt-"+addingWeek); if(f) f.focus({preventScroll:true}); }
+  $("weeks").innerHTML = html;
+  if(addingWeek!==null){ const f=$("nt-"+addingWeek); if(f) f.focus({preventScroll:true}); }
 
-  const now = document.getElementById("nowText"), bar=document.getElementById("barFill");
+  const now = $("nowText"), bar=$("barFill");
   if(g && g.days>=0){
     const l=lmpDate(), edd=new Date(l.getTime()+280*MS_DAY);
     const left = Math.round((edd-today())/MS_DAY);
@@ -510,7 +881,7 @@ function render(){
   }
 
   const k=KUPOT[state.kupa];
-  document.getElementById("shabanBody").innerHTML = `<ul>
+  $("shabanBody").innerHTML = `<ul>
     <li>חלק מהבדיקות כלולות ב<b>סל הבריאות</b> ובחינם דרך הקופה. על בדיקות שלא בסל, או כשבוחרים רופא פרטי, יש <b>החזר מסל ההריון</b> בביטוח המשלים.</li>
     <li>${k? `<b>${k.short}:</b> ${k.cap}` : "בחרי קופה למעלה כדי לראות את גובה ההחזר."}</li>
     <li>סל ההריון כלול רק ב<b>רובד העליון</b>, ויש <b>6 חודשי המתנה</b> מיום ההצטרפות אליו.</li>
@@ -518,26 +889,28 @@ function render(){
     <li>שמרי קבלות על שמך המלא. אפשר להגיש עד 6 חודשים אחרי הלידה.</li></ul>`;
 }
 function rerender(){ const y=window.scrollY; render(); window.scrollTo(0,y); }
+function scrollToCurrent(){
+  const g=ga(); if(!(g && g.days>=0 && g.w>WEEK_MIN)) return;
+  setTimeout(()=>{ const t=$("w"+Math.min(g.w,42)); if(t) t.scrollIntoView({block:"start", behavior:"auto"}); },60);
+}
 
 function jump(w){
-  if(!document.getElementById("w"+w)){ state.filter="all"; state.openOnly=false; syncChips(); render(); }
-  const t=document.getElementById("w"+w); if(t) t.scrollIntoView({block:"start"});
+  setView("list");
+  if(!$("w"+w)){ state.filter="all"; state.openOnly=false; syncChips(); render(); }
+  const t=$("w"+w); if(t) t.scrollIntoView({block:"start"});
 }
 function syncChips(){
   document.querySelectorAll(".chip[data-f]").forEach(c=>c.setAttribute("aria-pressed", c.dataset.f===state.filter));
-  document.getElementById("openOnly").setAttribute("aria-pressed", state.openOnly);
+  $("openOnly").setAttribute("aria-pressed", state.openOnly);
 }
 function syncMode(){
-  document.getElementById("modeLmp").setAttribute("aria-pressed", state.mode==="lmp");
-  document.getElementById("modeEdd").setAttribute("aria-pressed", state.mode==="edd");
-  document.getElementById("dateLabel").textContent = state.mode==="lmp" ? "תאריך הווסת האחרונה" : "תאריך לידה משוער";
+  $("modeLmp").setAttribute("aria-pressed", state.mode==="lmp");
+  $("modeEdd").setAttribute("aria-pressed", state.mode==="edd");
+  $("dateLabel").textContent = state.mode==="lmp" ? "תאריך הווסת האחרונה" : "תאריך לידה משוער";
 }
 
 document.addEventListener("change", e=>{
-  if(e.target.matches('input[type=checkbox][data-id]')){
-    const id=e.target.dataset.id; if(e.target.checked) state.done[id]=true; else delete state.done[id];
-    save(); rerender();
-  }
+  if(e.target.matches('input[type=checkbox][data-id]')) setDone(e.target.dataset.id, e.target.checked);
 });
 document.addEventListener("click", e=>{
   const j=e.target.closest("[data-jump]"); if(j){ jump(+j.dataset.jump); return; }
@@ -546,40 +919,38 @@ document.addEventListener("click", e=>{
     const key=r.dataset.key, open=r.getAttribute("aria-expanded")!=="true";
     if(open) expanded.add(key); else expanded.delete(key);
     r.setAttribute("aria-expanded", open);
-    const m=document.getElementById(r.getAttribute("aria-controls")); if(m) m.hidden=!open;
+    const m=$(r.getAttribute("aria-controls")); if(m) m.hidden=!open;
     return;
   }
   const c=e.target.closest(".chip[data-f]"); if(c){ state.filter=c.dataset.f; syncChips(); render(); return; }
   const a=e.target.closest("[data-add]"); if(a){ addingWeek=+a.dataset.add; rerender(); return; }
   if(e.target.closest("[data-cancel]")){ addingWeek=null; rerender(); return; }
+  const u=e.target.closest("[data-uninvite]"); if(u){ write(()=>deleteDoc(doc(db,"invites",u.dataset.uninvite))); return; }
   const d=e.target.closest("[data-del]");
   if(d){
     const id=d.dataset.del;
     if(d.dataset.confirm!=="1"){ d.dataset.confirm="1"; d.textContent="ללחוץ שוב כדי למחוק"; return; }
-    state.custom=state.custom.filter(x=>x.id!==id); delete state.done[id]; save(); rerender();
+    state.custom=state.custom.filter(x=>x.id!==id); rerender();
+    write(async()=>{ await deleteDoc(doc(db,"families",me.familyId,"tasks",id)); if(state.done[id]) await setDoc(doc(db,"families",me.familyId,"data","done"),{items:{[id]:deleteField()}},{merge:true}); });
   }
 });
 document.addEventListener("submit", e=>{
   const f=e.target.closest("form[data-form]"); if(!f) return;
   e.preventDefault();
   const t=f.elements.t.value.trim(); if(!t) return;
-  const w=+f.dataset.form;
-  const id="u"+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
-  state.custom.push({id, w, t, d:f.elements.d.value.trim()});
-  addingWeek=null; save(); rerender();
+  const w=+f.dataset.form, id="u"+uid();
+  const task={ w, t, d:f.elements.d.value.trim(), by: me.name, createdAt: Date.now() };
+  state.custom.push({id, ...task}); addingWeek=null; rerender();
+  write(()=>setDoc(doc(db,"families",me.familyId,"tasks",id), task));
 });
 document.addEventListener("keydown", e=>{ if(e.key==="Escape" && addingWeek!==null){ addingWeek=null; rerender(); } });
-document.getElementById("openOnly").onclick=()=>{ state.openOnly=!state.openOnly; syncChips(); render(); };
-document.getElementById("jumpBtn").onclick=()=>{ const g=ga(); if(g && g.days>=0) jump(Math.min(Math.max(g.w,WEEK_MIN),42)); else document.getElementById("dateInput").focus(); };
-const di=document.getElementById("dateInput"); di.value=state.date;
-di.addEventListener("change",()=>{ state.date=di.value; save(); render(); });
-const ks=document.getElementById("kupa"); ks.value=state.kupa;
-ks.addEventListener("change",()=>{ state.kupa=ks.value; save(); render(); });
-document.getElementById("modeLmp").onclick=()=>{ state.mode="lmp"; syncMode(); save(); render(); };
-document.getElementById("modeEdd").onclick=()=>{ state.mode="edd"; syncMode(); save(); render(); };
+$("openOnly").onclick=()=>{ state.openOnly=!state.openOnly; syncChips(); render(); };
+$("jumpBtn").onclick=()=>{ const g=ga(); if(g && g.days>=0) jump(Math.min(Math.max(g.w,WEEK_MIN),42)); else { setView("list"); $("dateInput").focus(); } };
+$("dateInput").addEventListener("change",()=>{ state.date=$("dateInput").value; saveSettings(); render(); });
+$("kupa").addEventListener("change",()=>{ state.kupa=$("kupa").value; saveSettings(); render(); });
+$("modeLmp").onclick=()=>{ state.mode="lmp"; syncMode(); saveSettings(); render(); };
+$("modeEdd").onclick=()=>{ state.mode="edd"; syncMode(); saveSettings(); render(); };
 
-syncMode(); render();
-const g0=ga(); if(g0 && g0.days>=0 && g0.w>WEEK_MIN){ setTimeout(()=>{ const t=document.getElementById("w"+Math.min(g0.w,42)); if(t) t.scrollIntoView({block:"start", behavior:"auto"}); },60); }
 </script>
 </body>
 </html>
