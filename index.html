@@ -251,6 +251,7 @@ dialog::backdrop{background:rgba(45,28,50,.45)}
 .tile.main{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
 .tile.main small{color:inherit;opacity:.9}
 .sh2{font-family:var(--display);font-size:1.15rem;margin:26px 0 6px;display:flex;justify-content:space-between;align-items:center;gap:8px}
+.shlink{color:var(--ink);font-size:.85rem;text-decoration:underline;word-break:break-all}
 .store{background:var(--surface);border:1px solid var(--line);border-radius:14px;margin:10px 0;overflow:hidden}
 .store h3{display:flex;justify-content:space-between;align-items:baseline;gap:8px;padding:12px 14px 8px;font-size:1.05rem}
 .store h3 span{font-family:var(--body);font-weight:400;font-size:.9rem;color:var(--muted)}
@@ -685,7 +686,7 @@ function show(name){ SCREENS.forEach(s => $(s).classList.toggle("hidden", s!==na
 // ───────────── state ─────────────
 let me = null;            // users/{uid} doc
 let family = null;        // families/{fid} doc
-const state = { mode:"lmp", date:"", kupa:"", babyName:"", babySex:"", done:{}, custom:[], overrides:{}, shop:{cats:[],prods:[],opts:[]}, shopCat:"all", filter:"all", openOnly:false };
+const state = { mode:"lmp", date:"", kupa:"", babyName:"", babySex:"", done:{}, custom:[], overrides:{}, shop:{cats:[],prods:[],opts:[]}, storeList:null, shopCat:"all", filter:"all", openOnly:false };
 const expanded = new Set();
 let addingWeek = null;
 let unsubs = [];
@@ -884,6 +885,11 @@ async function startApp(){
       rerender();
     }, e => setSync("לא הצלחתי לטעון את הקניות: " + (e.code||e.message))));
   });
+
+  unsubs.push(onSnapshot(doc(db, "families", fid, "data", "stores"), s => {
+    state.storeList = (s.exists() && Array.isArray(s.data().list)) ? s.data().list : null;
+    rerender();
+  }, e => setSync("לא הצלחתי לטעון את החנויות: " + (e.code||e.message))));
 
   unsubs.push(onSnapshot(collection(db, "families", fid, "tasks"), s => {
     state.custom = s.docs.map(d => ({ id: d.id, ...d.data() })).sort((a,b)=>(a.createdAt||0)-(b.createdAt||0));
@@ -1195,6 +1201,9 @@ function editTask(id){
 
 // ───────────── shopping ─────────────
 const STORES = ["שילב","מוצצים","מיננה","שיין","אלי אקספרס","בייבי סטאר","עגליס"];
+const storeList = () => state.storeList || STORES;
+const safeUrl = u => /^https?:\/\//i.test(u||"") ? u : "";
+const linkHTML = o => safeUrl(o.link) ? `<a class="shlink" href="${esc(safeUrl(o.link))}" target="_blank" rel="noopener noreferrer">לינק למוצר</a>` : "";
 const DEFAULT_CATS = ["עגלה וטיולים","כיסא בטיחות ורכב","שינה","האכלה והנקה","רחצה והחתלה","ביגוד","בית חולים ולידה","בטיחות ובית","משחקים והתפתחות"];
 const DEC = { none:"טרם הוחלט", no:"לא לקנות", maybe:"כנראה אקנה", final:"סופי" };
 const PAYMENTS = ["אשראי","מזומן","ביט","פייבוקס","תשלומים","שובר / מתנה"];
@@ -1211,7 +1220,7 @@ function prodHTML(p){
   const priced = os.filter(o=>o.price>0);
   const min = priced.length>1 ? Math.min(...priced.map(o=>o.price)) : null;
   const rows = os.map(o => `<tr>
-    <td><b>${esc(o.company)}</b> ${esc(o.model)}${o.notes?`<span class="mini">${esc(o.notes)}</span>`:""}</td>
+    <td><b>${esc(o.company)}</b> ${esc(o.model)}${o.notes?`<span class="mini">${esc(o.notes)}</span>`:""}${linkHTML(o)?`<br>${linkHTML(o)}`:""}</td>
     <td>${esc(o.color)}</td>
     <td class="num">${o.price>0?money(o.price):"—"}${min!==null && o.price===min?'<span class="tag final">הכי זול</span>':""}</td>
     <td>${esc(o.store||"—")}${o.eilat?'<span class="tag eilat">אילת</span>':""}</td>
@@ -1251,12 +1260,13 @@ function renderShop(){
     <div class="tile"><small>מתוכם באילת</small><b>${money(eil)}</b></div></div>
     ${noPrice?`<p class="hint">ל־${noPrice} פריטים עדיין אין מחיר, ולכן הם לא נכללים בסכום.</p>`:""}`;
 
-  const names = STORES.concat([...new Set(inc.map(o=>o.store||"ללא חנות"))].filter(s=>!STORES.includes(s)));
+  const SL = storeList();
+  const names = SL.concat([...new Set(inc.map(o=>o.store||"ללא חנות"))].filter(s=>!SL.includes(s)));
   const stores = names.map(sn => {
     const rows = inc.filter(o=>(o.store||"ללא חנות")===sn);
     const rowsHTML = rows.map(o => `<tr>
       <td>${esc(pBy[o.pid].name)}${decTag(o.decision)}${o.eilat?'<span class="tag eilat">אילת</span>':""}</td>
-      <td>${[o.company,o.model].filter(Boolean).map(esc).join(" ")}</td>
+      <td>${[o.company,o.model].filter(Boolean).map(esc).join(" ")}${linkHTML(o)?`<br>${linkHTML(o)}`:""}</td>
       <td>${esc(o.color)}</td><td>${esc(o.notes)}</td>
       <td class="num">${o.price>0?money(o.price):"—"}</td><td>${esc(o.payment)}</td></tr>`).join("");
     return `<section class="store"><h3>${esc(sn)}<span>${rows.length?rows.length+" פריטים · ":""}<b>${money(sum(rows))}</b></span></h3>
@@ -1273,7 +1283,7 @@ function renderShop(){
 
   const chips = cats.length ? `<div class="chips" role="group" aria-label="סינון לפי קטגוריה"><button class="chip" data-sc="all" aria-pressed="${fc==="all"}">הכול</button>${cats.map(c=>`<button class="chip" data-sc="${esc(c.id)}" aria-pressed="${fc===c.id}">${esc(c.name)}</button>`).join("")}</div>` : "";
   $("shopBody").innerHTML = `${chips}${tiles}
-    <h2 class="sh2">מה קונים ואיפה</h2>${stores}
+    <div class="sh2"><span>מה קונים ואיפה</span><button class="btn" type="button" data-shop="stores">ניהול חנויות</button></div>${stores}
     <div class="sh2"><span>ציוד לפי קטגוריות</span><button class="btn" type="button" data-shop="add-cat">+ קטגוריה</button></div>${catsHTML}`;
 }
 
@@ -1284,6 +1294,27 @@ function shopAction(a, id){
     const b = writeBatch(db);
     DEFAULT_CATS.forEach((n,i) => b.set(ref("shopCats", "c"+uid()+i), { name:n, createdAt: Date.now()+i }));
     return write(() => b.commit());
+  }
+  if (a === "stores") {
+    const list = storeList(), extra = 2;
+    const rowsHTML = list.map((n,i) => `<label>חנות ${i+1}<input name="s${i}" maxlength="60" value="${esc(n)}"></label>`).join("")
+      + Array.from({length: extra}, (_,j) => `<label>חנות חדשה<input name="s${list.length+j}" maxlength="60" placeholder="להוספה"></label>`).join("");
+    return openDlg({
+      html: `<h2>ניהול חנויות</h2><p class="hint">שינוי שם מעדכן את כל הפריטים באותה חנות. מחיקה: מרוקנים את השם. הפריטים נשארים, בלי חנות.</p>${rowsHTML}`,
+      onSave: fd => {
+        const all = list.map((_,i)=>(fd["s"+i]||"").trim());
+        for (let j=0;j<extra;j++) all.push((fd["s"+(list.length+j)]||"").trim());
+        const next = [...new Set(all.filter(Boolean))];
+        const b = writeBatch(db);
+        list.forEach((old,i) => {
+          const nv = all[i];
+          if (nv === old) return;
+          state.shop.opts.filter(o=>o.store===old).forEach(o => b.set(ref("shopOpts", o.id), { store: nv }, { merge: true }));
+        });
+        b.set(doc(db, "families", me.familyId, "data", "stores"), { list: next });
+        return write(() => b.commit());
+      }
+    });
   }
   if (a === "add-cat" || a === "edit-cat") {
     const c = a==="edit-cat" ? sh.cats.find(x=>x.id===id) : null;
@@ -1325,7 +1356,7 @@ function shopAction(a, id){
     const o = a==="edit-opt" ? sh.opts.find(x=>x.id===id) : null;
     const pid = o ? o.pid : id;
     const prod = sh.prods.find(p=>p.id===pid);
-    const inList = !o?.store || STORES.includes(o.store);
+    const inList = !o?.store || storeList().includes(o.store);
     return openDlg({
       html: `<h2>${o?"עריכת אפשרות":"אפשרות להשוואה"}${prod?` · ${esc(prod.name)}`:""}</h2>
         <div class="grid2">
@@ -1336,8 +1367,9 @@ function shopAction(a, id){
           <label>צבע<input name="color" maxlength="40" value="${esc(o?.color)}"></label>
           <label>מחיר (₪)<input name="price" type="number" min="0" step="any" inputmode="decimal" value="${o?.price>0?o.price:""}"></label>
         </div>
-        <label>חנות<select name="storeSel" id="optStore"><option value="">לא נבחרה</option>${STORES.map(s=>`<option ${o?.store===s?"selected":""}>${esc(s)}</option>`).join("")}<option value="__other" ${inList?"":"selected"}>אחרת…</option></select></label>
+        <label>חנות<select name="storeSel" id="optStore"><option value="">לא נבחרה</option>${storeList().map(s=>`<option ${o?.store===s?"selected":""}>${esc(s)}</option>`).join("")}<option value="__other" ${inList?"":"selected"}>אחרת…</option></select></label>
         <label id="optOtherL" class="${inList?"hidden":""}">שם החנות<input name="storeOther" maxlength="60" value="${inList?"":esc(o?.store)}"></label>
+        <label>לינק למוצר<input name="link" type="url" inputmode="url" maxlength="500" placeholder="https://..." value="${esc(o?.link)}"></label>
         <label class="chk"><input type="checkbox" name="eilat" ${o?.eilat?"checked":""}> אקנה באילת</label>
         <label>אופן תשלום<input name="payment" list="payList" maxlength="60" value="${esc(o?.payment)}"></label>
         <datalist id="payList">${PAYMENTS.map(p=>`<option value="${p}"></option>`).join("")}</datalist>
@@ -1348,7 +1380,8 @@ function shopAction(a, id){
           pid, company: (fd.company||"").trim(), model: (fd.model||"").trim(), color: (fd.color||"").trim(),
           price: fd.price===""||fd.price==null ? null : Number(fd.price),
           store: (fd.storeSel==="__other" ? fd.storeOther||"" : fd.storeSel||"").trim(),
-          eilat: !!fd.eilat, payment: (fd.payment||"").trim(), decision: fd.decision||"none", notes: (fd.notes||"").trim()
+          eilat: !!fd.eilat, payment: (fd.payment||"").trim(), decision: fd.decision||"none", notes: (fd.notes||"").trim(),
+          link: (fd.link||"").trim() && !/^https?:\/\//i.test(fd.link.trim()) ? "https://"+fd.link.trim() : (fd.link||"").trim()
         };
         return write(() => o ? updateDoc(ref("shopOpts", o.id), v) : setDoc(ref("shopOpts", "o"+uid()), { ...v, createdAt: Date.now() }));
       },
@@ -1418,7 +1451,7 @@ $("modeEdd").onclick=()=>{ state.mode="edd"; syncMode(); saveSettings(); render(
 // ───────────── demo mode ─────────────
 let realMe = null;
 const isoDay = d => d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
-function resetState(){ Object.assign(state, { mode:"lmp", date:"", kupa:"", babyName:"", babySex:"", done:{}, custom:[], overrides:{}, shop:{cats:[],prods:[],opts:[]}, shopCat:"all", filter:"all", openOnly:false }); addingWeek = null; expanded.clear(); syncChips(); }
+function resetState(){ Object.assign(state, { mode:"lmp", date:"", kupa:"", babyName:"", babySex:"", done:{}, custom:[], overrides:{}, shop:{cats:[],prods:[],opts:[]}, storeList:null, shopCat:"all", filter:"all", openOnly:false }); addingWeek = null; expanded.clear(); syncChips(); }
 function demoSeed(){
   demoStore.clear();
   const f = "demo-family", b = "families/" + f, t = Date.now();
