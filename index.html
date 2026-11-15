@@ -251,6 +251,16 @@ dialog::backdrop{background:rgba(45,28,50,.45)}
 .tile.main{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
 .tile.main small{color:inherit;opacity:.9}
 .sh2{font-family:var(--display);font-size:1.15rem;margin:26px 0 6px;display:flex;justify-content:space-between;align-items:center;gap:8px}
+.namesrow{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.namesrow input{flex:1;min-width:160px}
+.namecard{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px 14px;margin:10px 0}
+.nchead{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
+.nchead h3{font-size:1.1rem}
+.navg{font-family:var(--display);font-weight:700;color:var(--ink);white-space:nowrap}
+.rate{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:4px 0;font-size:.95rem}
+.stars{display:flex;gap:2px}
+.star{background:none;border:0;font-size:1.25rem;line-height:1;color:var(--line);cursor:pointer;padding:2px}
+.star.on{color:var(--ink)}
 .shlink{color:var(--ink);font-size:.85rem;text-decoration:underline;word-break:break-all}
 .store{background:var(--surface);border:1px solid var(--line);border-radius:14px;margin:10px 0;overflow:hidden}
 .store h3{display:flex;justify-content:space-between;align-items:baseline;gap:8px;padding:12px 14px 8px;font-size:1.05rem}
@@ -323,6 +333,7 @@ body.demo .realonly,body.demo #demoPanel{display:none}
     <div class="tabs">
       <button type="button" data-view="list" aria-current="page">הצ׳ק ליסט</button>
       <button type="button" data-view="shop">קניות</button>
+      <button type="button" data-view="names">שמות</button>
       <button type="button" data-view="family">משפחה</button>
     </div>
     <div class="me" id="meBox"></div>
@@ -404,6 +415,9 @@ body.demo .realonly,body.demo #demoPanel{display:none}
     <div id="shopBody"></div>
   </section>
 
+  <section id="namesView" class="hidden">
+    <div id="namesBody"></div>
+  </section>
   <section id="familyView" class="hidden">
     <div class="panel">
       <h2>צבעי האתר</h2>
@@ -515,7 +529,16 @@ function mergeInto(t, src){
 }
 const demoNotify = path => demoListeners.forEach(l => l.hit(path));
 function demoSet(path, data, opts){ const cur = opts && opts.merge ? (clone(demoStore.get(path)) || {}) : {}; mergeInto(cur, data); demoStore.set(path, cur); demoNotify(path); }
-function demoUpdate(path, data){ const cur = clone(demoStore.get(path)) || {}; Object.entries(data).forEach(([k, v]) => { if (v === DEL) delete cur[k]; else cur[k] = clone(v); }); demoStore.set(path, cur); demoNotify(path); }
+function demoUpdate(path, data){
+  const cur = clone(demoStore.get(path)) || {};
+  Object.entries(data).forEach(([k, v]) => {
+    const keys = k.split("."); let t = cur;
+    keys.slice(0,-1).forEach(kk => { if (!t[kk] || typeof t[kk] !== "object") t[kk] = {}; t = t[kk]; });
+    const last = keys[keys.length-1];
+    if (v === DEL) delete t[last]; else t[last] = clone(v);
+  });
+  demoStore.set(path, cur); demoNotify(path);
+}
 function demoDelete(path){ demoStore.delete(path); demoNotify(path); }
 function demoListen(ref, next){
   const path = ref.path, isColl = ref.type === "collection", depth = path.split("/").length + 1;
@@ -686,7 +709,7 @@ function show(name){ SCREENS.forEach(s => $(s).classList.toggle("hidden", s!==na
 // ───────────── state ─────────────
 let me = null;            // users/{uid} doc
 let family = null;        // families/{fid} doc
-const state = { mode:"lmp", date:"", kupa:"", babyName:"", babySex:"", done:{}, custom:[], overrides:{}, shop:{cats:[],prods:[],opts:[]}, storeList:null, shopCat:"all", filter:"all", openOnly:false };
+const state = { mode:"lmp", date:"", kupa:"", babyName:"", babySex:"", done:{}, custom:[], overrides:{}, shop:{cats:[],prods:[],opts:[]}, storeList:null, names:[], shopCat:"all", filter:"all", openOnly:false };
 const expanded = new Set();
 let addingWeek = null;
 let unsubs = [];
@@ -886,6 +909,11 @@ async function startApp(){
     }, e => setSync("לא הצלחתי לטעון את הקניות: " + (e.code||e.message))));
   });
 
+  unsubs.push(onSnapshot(collection(db, "families", fid, "names"), s => {
+    state.names = s.docs.map(d => ({ id: d.id, ...d.data() })).sort(byTime);
+    rerender();
+  }, e => setSync("לא הצלחתי לטעון את השמות: " + (e.code||e.message))));
+
   unsubs.push(onSnapshot(doc(db, "families", fid, "data", "stores"), s => {
     state.storeList = (s.exists() && Array.isArray(s.data().list)) ? s.data().list : null;
     rerender();
@@ -962,6 +990,7 @@ function setView(v){
   document.querySelectorAll(".tabs button").forEach(b => { if (b.dataset.view===v) b.setAttribute("aria-current","page"); else b.removeAttribute("aria-current"); });
   $("listView").classList.toggle("hidden", v!=="list");
   $("shopView").classList.toggle("hidden", v!=="shop");
+  $("namesView").classList.toggle("hidden", v!=="names");
   $("familyView").classList.toggle("hidden", v!=="family");
   window.scrollTo(0,0);
 }
@@ -1153,6 +1182,7 @@ function render(){
     <li>ביטוח בריאות פרטי שנעשה לפני חודשיים לא מכסה את ההריון הזה, ולכן הוא לא מופיע כאן. ההחזרים מהקופה לא קשורים אליו.</li>
     <li>שמרי קבלות על שמך המלא. אפשר להגיש עד 6 חודשים אחרי הלידה.</li></ul>`;
   renderShop();
+  renderNames();
 }
 function rerender(){
   const y = window.scrollY;
@@ -1238,6 +1268,69 @@ function prodHTML(p){
       <div class="acts2"><button class="btn" type="button" data-shop="add-opt" data-id="${esc(p.id)}">+ אפשרות להשוואה</button><button class="link" data-shop="edit-prod" data-id="${esc(p.id)}">עריכת המוצר</button></div>
     </div></li>`;
 }
+
+// ───────────── names tab ─────────────
+const nameAvg = n => { const v = Object.values(n.ratings||{}); return v.length ? v.reduce((a,b)=>a+b,0)/v.length : 0; };
+function renderNames(){
+  if (!me) return;
+  const members = (family && family.members && family.members.length) ? family.members : [{ id: me.id, name: me.name }];
+  const nameOf = id => (members.find(m=>m.id===id)||{}).name || "";
+  const sorted = [...state.names].sort((a,b) => nameAvg(b)-nameAvg(a) || (a.createdAt||0)-(b.createdAt||0));
+  const stars = (v, mine) => [1,2,3,4,5].map(k => mine
+    ? `<button type="button" class="star${k<=v?" on":""}" data-rate="${esc(mine)}" data-v="${k}" aria-label="${k} כוכבים" aria-pressed="${k<=v}">★</button>`
+    : `<span class="star${k<=v?" on":""}" aria-hidden="true">★</span>`).join("");
+  const cards = sorted.map(n => {
+    const avg = nameAvg(n), mine = (n.ratings||{})[me.id] || 0;
+    const rows = members.map(m => {
+      const v = (n.ratings||{})[m.id] || 0;
+      return `<div class="rate"><span>${esc(m.name)}${m.id===me.id?" (את/ה)":""}</span><div class="stars">${m.id===me.id ? stars(mine, n.id) : (v ? stars(v) : '<em class="mini">עוד לא דירג/ה</em>')}</div></div>`;
+    }).join("");
+    return `<article class="namecard">
+      <div class="nchead"><div><h3>${esc(n.name)}</h3><span class="mini">הציע/ה: ${esc(nameOf(n.byId) || n.by || "")}</span></div>
+        <div class="navg">${avg ? avg.toFixed(1) + " ★" : "בלי דירוג"}</div></div>
+      ${rows}
+      <button class="link" type="button" data-name-edit="${esc(n.id)}">עריכת השם / מחיקה</button>
+    </article>`;
+  }).join("");
+  const form = `<form class="panel namesform" data-names-form>
+      <h2>הצעת שם</h2>
+      <div class="namesrow">
+        <input name="n" required maxlength="60" placeholder="שם מוצע" aria-label="שם מוצע">
+        <select name="by" aria-label="מי הציע/ה">${members.map(m=>`<option value="${esc(m.id)}" ${m.id===me.id?"selected":""}>${esc(m.name)}</option>`).join("")}</select>
+        <button class="btn" type="submit">הוספה</button>
+      </div>
+    </form>`;
+  $("namesBody").innerHTML = `${form}
+    <div class="sh2"><span>השמות שהוצעו${sorted.length?" · "+sorted.length:""}</span></div>
+    ${cards || '<div class="panel"><p>עוד אין שמות. מוסיפים שם למעלה, וכל אחד מדרג/ת לפי הסדר.</p></div>'}
+    <p class="hint">כל אחד מדרג/ת לעצמו (1 עד 5 כוכבים). לחיצה חוזרת על אותו כוכב מבטלת את הדירוג.</p>`;
+}
+async function addName(fd){
+  const name = (fd.n||"").trim(); if (!name) return;
+  const by = (family && family.members||[]).find(m => m.id === fd.by) || { id: me.id, name: me.name };
+  return write(() => setDoc(doc(db, "families", me.familyId, "names", "n"+uid()), { name, byId: by.id, by: by.name, ratings: {}, createdAt: Date.now() }));
+}
+function rateName(id, v){
+  const n = state.names.find(x => x.id === id); if (!n) return;
+  const cur = (n.ratings||{})[me.id];
+  const key = "ratings." + me.id;
+  return write(() => updateDoc(doc(db, "families", me.familyId, "names", id), { [key]: cur === v ? deleteField() : v }));
+}
+function openNameDlg(id){
+  const n = state.names.find(x => x.id === id); if (!n) return;
+  return openDlg({
+    html: `<h2>עריכת שם</h2><label>השם<input name="n" required maxlength="60" value="${esc(n.name)}"></label>`,
+    onSave: fd => { const name = (fd.n||"").trim(); if (name) return write(() => updateDoc(doc(db, "families", me.familyId, "names", id), { name })); },
+    onDelete: () => write(() => deleteDoc(doc(db, "families", me.familyId, "names", id))),
+    delLabel: "מחיקת השם"
+  });
+}
+document.addEventListener("submit", e => {
+  const f = e.target.closest("form[data-names-form]"); if (!f) return;
+  e.preventDefault();
+  const fd = Object.fromEntries(new FormData(f));
+  addName(fd).then(() => f.reset());
+});
 
 function renderShop(){
   const { cats, prods, opts } = state.shop;
@@ -1405,6 +1498,8 @@ document.addEventListener("click", e=>{
   const sw=e.target.closest("[data-pal]");
   if(sw){ applyPalette(sw.dataset.pal); write(()=>updateDoc(doc(db,"users",me.id),{palette:sw.dataset.pal})); return; }
   const sc=e.target.closest("[data-sc]"); if(sc){ state.shopCat=sc.dataset.sc; renderShop(); return; }
+  const rt=e.target.closest("[data-rate]"); if(rt){ rateName(rt.dataset.rate, +rt.dataset.v); return; }
+  const ne=e.target.closest("[data-name-edit]"); if(ne){ openNameDlg(ne.dataset.nameEdit); return; }
   const sh=e.target.closest("[data-shop]"); if(sh){ shopAction(sh.dataset.shop, sh.dataset.id); return; }
   const ed=e.target.closest("[data-edit]"); if(ed){ editTask(ed.dataset.edit); return; }
   const rs=e.target.closest("[data-reset]");
@@ -1451,7 +1546,7 @@ $("modeEdd").onclick=()=>{ state.mode="edd"; syncMode(); saveSettings(); render(
 // ───────────── demo mode ─────────────
 let realMe = null;
 const isoDay = d => d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
-function resetState(){ Object.assign(state, { mode:"lmp", date:"", kupa:"", babyName:"", babySex:"", done:{}, custom:[], overrides:{}, shop:{cats:[],prods:[],opts:[]}, storeList:null, shopCat:"all", filter:"all", openOnly:false }); addingWeek = null; expanded.clear(); syncChips(); }
+function resetState(){ Object.assign(state, { mode:"lmp", date:"", kupa:"", babyName:"", babySex:"", done:{}, custom:[], overrides:{}, shop:{cats:[],prods:[],opts:[]}, storeList:null, names:[], shopCat:"all", filter:"all", openOnly:false }); addingWeek = null; expanded.clear(); syncChips(); }
 function demoSeed(){
   demoStore.clear();
   const f = "demo-family", b = "families/" + f, t = Date.now();
@@ -1468,6 +1563,7 @@ function demoSeed(){
   demoStore.set(b+"/data/overrides", { items: { course: { t:"קורס הכנה ללידה בבית החולים", d:"לבדוק תאריכים ולהירשם", w:20 } } });
   demoStore.set(b+"/tasks/t1", { w:22, t:"לבדוק מחירי עגלות בחנויות", d:"", by:"דנה", createdAt:1 });
   demoStore.set(b+"/tasks/t2", { w:24, t:"לתאם סיור בבית החולים", d:"להתקשר ולשאול על ימי סיור", by:"יוני", createdAt:2 });
+  [["n1","נועה","demo",["demo","demo2"]],["n2","תמר","demo2",[]],["n3","אליה","demo",[]]].forEach(([id,name,by,_],i) => demoStore.set(b+"/names/"+id, { name, byId: by, by: by==="demo"?"דנה":"יוני", ratings: i===0 ? { demo:5, demo2:4 } : (i===1 ? { demo:3 } : {}), createdAt:i+1 }));
   [["c1","עגלה וטיולים"],["c2","שינה"],["c3","האכלה והנקה"]].forEach(([id,name],i) => demoStore.set(b+"/shopCats/"+id, { name, createdAt:i+1 }));
   [["p1","עגלה","c1",30],["p2","כיסא בטיחות","c1",32],["p3","מיטת תינוק","c2",28],["p4","משאבת חלב","c3",34]]
     .forEach(([id,name,cat,when],i) => demoStore.set(b+"/shopProds/"+id, { name, cat, when, createdAt:i+1 }));
