@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>צ׳ק ליסט הריון לפי שבועות</title>
+<script>try{var p=localStorage.getItem("preg:palette");if(p)document.documentElement.setAttribute("data-palette",p)}catch(e){}</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@500;600;700&family=Assistant:wght@400;600;700&display=swap" rel="stylesheet">
@@ -186,9 +187,88 @@ body{background:linear-gradient(180deg,var(--accent-soft) 0,var(--bg) 320px) no-
 .bar i{background:linear-gradient(90deg,var(--t3),var(--t2),var(--accent))}
 .card{box-shadow:0 8px 30px color-mix(in srgb,var(--accent) 18%,transparent)}
 .btn,.gbtn,.chip,.tabs button,.toggle button{border-radius:999px}
+
+/* ---- palettes (chosen per person) ---- */
+:root{--t1ink:#d6628d}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--t1ink:#f4a6c3}}
+:root[data-theme="dark"]{--t1ink:#f4a6c3}
+:root[data-palette="blue"]{--bg:#f3f8fd;--line:#dbe8f5;--accent:#3f7fc0;--accent-soft:#dcebfa;--on-accent:#ffffff}
+@media (prefers-color-scheme: dark){:root[data-palette="blue"]:not([data-theme="light"]){--bg:#141a22;--surface:#1d2530;--line:#2b3949;--accent:#9cc8f2;--accent-soft:#213349;--on-accent:#0f2236}}
+:root[data-palette="blue"][data-theme="dark"]{--bg:#141a22;--surface:#1d2530;--line:#2b3949;--accent:#9cc8f2;--accent-soft:#213349;--on-accent:#0f2236}
+:root[data-palette="green"]{--bg:#f3faf5;--line:#dcece2;--accent:#2f8a5a;--accent-soft:#dcf3e5;--on-accent:#ffffff}
+@media (prefers-color-scheme: dark){:root[data-palette="green"]:not([data-theme="light"]){--bg:#141c18;--surface:#1c2722;--line:#2b3d34;--accent:#95d9b1;--accent-soft:#1f3a2c;--on-accent:#0f2a1c}}
+:root[data-palette="green"][data-theme="dark"]{--bg:#141c18;--surface:#1c2722;--line:#2b3d34;--accent:#95d9b1;--accent-soft:#1f3a2c;--on-accent:#0f2a1c}
+:root[data-palette="lavender"]{--bg:#f8f5fd;--line:#e6def3;--accent:#7a56b0;--accent-soft:#ebe2f8;--on-accent:#ffffff}
+@media (prefers-color-scheme: dark){:root[data-palette="lavender"]:not([data-theme="light"]){--bg:#191621;--surface:#231f2e;--line:#352e45;--accent:#cbb2f0;--accent-soft:#302545;--on-accent:#231538}}
+:root[data-palette="lavender"][data-theme="dark"]{--bg:#191621;--surface:#231f2e;--line:#352e45;--accent:#cbb2f0;--accent-soft:#302545;--on-accent:#231538}
+:root[data-palette="peach"]{--bg:#fff8f3;--line:#f5e3d6;--accent:#bd642b;--accent-soft:#fde6d5;--on-accent:#ffffff}
+@media (prefers-color-scheme: dark){:root[data-palette="peach"]:not([data-theme="light"]){--bg:#1d1713;--surface:#28201a;--line:#40332a;--accent:#f5be94;--accent-soft:#3d2a1c;--on-accent:#2e1a0c}}
+:root[data-palette="peach"][data-theme="dark"]{--bg:#1d1713;--surface:#28201a;--line:#40332a;--accent:#f5be94;--accent-soft:#3d2a1c;--on-accent:#2e1a0c}
+:root[data-palette="neutral"]{--bg:#f6f7f9;--line:#e1e5ea;--accent:#5f7189;--accent-soft:#e5eaf1;--on-accent:#ffffff}
+@media (prefers-color-scheme: dark){:root[data-palette="neutral"]:not([data-theme="light"]){--bg:#16191e;--surface:#20242b;--line:#30363f;--accent:#b9c4d4;--accent-soft:#2a313b;--on-accent:#141a22}}
+:root[data-palette="neutral"][data-theme="dark"]{--bg:#16191e;--surface:#20242b;--line:#30363f;--accent:#b9c4d4;--accent-soft:#2a313b;--on-accent:#141a22}
+
+.tri.t1{color:var(--t1ink)}
+.swatches{display:flex;flex-wrap:wrap;gap:12px}
+.swb{all:unset;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;font-size:.82rem;color:var(--muted);width:64px}
+.swb i{display:block;width:44px;height:44px;border-radius:50%;background:var(--c);box-shadow:0 0 0 1px var(--line)}
+.swb[aria-pressed="true"]{color:var(--ink);font-weight:700}
+.swb[aria-pressed="true"] i{box-shadow:0 0 0 3px var(--surface),0 0 0 6px var(--ink)}
+.swb:focus-visible{outline:3px solid var(--accent);outline-offset:3px;border-radius:10px}
+
+.acts2{display:flex;gap:14px;flex-wrap:wrap;margin-top:8px;align-items:center}
+.acts2 .del{margin-top:0}
+.mini{display:block;color:var(--muted);font-size:.8rem;font-weight:400}
+.hint{color:var(--muted);font-size:.88rem;margin:8px 0 0}
+
+dialog{border:0;border-radius:18px;padding:0;max-width:480px;width:calc(100% - 24px);background:var(--surface);color:var(--ink);box-shadow:0 20px 60px rgba(0,0,0,.28)}
+dialog::backdrop{background:rgba(45,28,50,.45)}
+.dlgform{display:flex;flex-direction:column;gap:12px;padding:20px 18px;max-height:88vh;overflow:auto}
+.dlgform h2{font-size:1.15rem}
+.dlgform label{font-size:.85rem;font-weight:600;color:var(--muted);display:flex;flex-direction:column;gap:4px}
+.dlgform input,.dlgform select,.dlgform textarea{font:inherit;font-size:16px;padding:9px 10px;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--ink);width:100%}
+.dlgform textarea{min-height:70px;resize:vertical}
+.dlgform .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.dlgform label.chk{flex-direction:row;align-items:center;gap:8px;color:var(--ink);font-size:1rem}
+.dlgform label.chk input{width:20px;height:20px;accent-color:var(--accent)}
+.dlgform .acts{display:flex;gap:8px;flex-wrap:wrap}
+.dlgform .del{align-self:flex-start;margin-top:2px}
+.toast{position:fixed;inset-inline:16px;bottom:16px;z-index:50;max-width:420px;margin-inline:auto;background:var(--ink);color:var(--bg);border-radius:12px;padding:10px 14px;font-size:.92rem;text-align:center}
+
+/* shopping */
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;margin:14px 0 4px}
+.tile{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:10px 12px}
+.tile small{display:block;color:var(--muted);font-size:.8rem}
+.tile b{font-family:var(--display);font-size:1.2rem;font-variant-numeric:tabular-nums;white-space:nowrap}
+.tile.main{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+.tile.main small{color:inherit;opacity:.9}
+.sh2{font-family:var(--display);font-size:1.15rem;margin:26px 0 6px;display:flex;justify-content:space-between;align-items:center;gap:8px}
+.store{background:var(--surface);border:1px solid var(--line);border-radius:14px;margin:10px 0;overflow:hidden}
+.store h3{display:flex;justify-content:space-between;align-items:baseline;gap:8px;padding:12px 14px 8px;font-size:1.05rem}
+.store h3 span{font-family:var(--body);font-weight:400;font-size:.9rem;color:var(--muted)}
+.store h3 b{font-family:var(--display);color:var(--ink);font-variant-numeric:tabular-nums}
+.tbl{overflow-x:auto}
+.tbl table{border-collapse:collapse;width:100%;min-width:560px;font-size:.92rem}
+.tbl th{text-align:start;font-size:.78rem;color:var(--muted);font-weight:600;padding:6px 10px;border-bottom:1px solid var(--line);white-space:nowrap}
+.tbl td{padding:8px 10px;border-top:1px solid var(--line);vertical-align:top}
+.tbl td .tag{margin-inline-start:6px}
+.num{font-variant-numeric:tabular-nums;white-space:nowrap}
+.cat{background:var(--surface);border:1px solid var(--line);border-radius:14px;margin:12px 0}
+.cathead{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:12px 14px 4px}
+.cathead h3{font-size:1.05rem}
+.prods{list-style:none;margin:0;padding:0 12px}
+.prod{border-top:1px solid var(--line)}
+.prod .row{min-height:44px}
+.prod .more{padding:0 0 12px}
+.tag.final{color:var(--basket);background:var(--basket-bg)}
+.tag.maybe{color:var(--private);background:var(--private-bg)}
+.tag.no{color:var(--muted);background:var(--bg)}
+.tag.eilat{color:var(--shaban);background:var(--shaban-bg)}
+.dsel{font:inherit;font-size:.9rem;padding:4px 6px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink)}
 </style>
 </head>
 <body>
+
 <div id="splash" class="screen"><div class="spinner" role="status" aria-label="טוען"></div></div>
 
 <div id="bootError" class="screen hidden">
@@ -227,6 +307,7 @@ body{background:linear-gradient(180deg,var(--accent-soft) 0,var(--bg) 320px) no-
   <nav class="nav" aria-label="ניווט">
     <div class="tabs">
       <button type="button" data-view="list" aria-current="page">הצ׳ק ליסט</button>
+      <button type="button" data-view="shop">קניות</button>
       <button type="button" data-view="family">משפחה</button>
     </div>
     <div class="me" id="meBox"></div>
@@ -250,6 +331,18 @@ body{background:linear-gradient(180deg,var(--accent-soft) 0,var(--bg) 320px) no-
             <button type="button" id="modeLmp" aria-pressed="true">וסת אחרונה</button>
             <button type="button" id="modeEdd" aria-pressed="false">תאריך לידה משוער</button>
           </div>
+        </div>
+        <div class="field">
+          <label for="babyName">שם התינוק/ת</label>
+          <input id="babyName" maxlength="40" placeholder="עוד לא החלטנו" autocomplete="off">
+        </div>
+        <div class="field">
+          <label for="babySex">מין</label>
+          <select id="babySex">
+            <option value="">עוד לא יודעים / הפתעה</option>
+            <option value="girl">בת</option>
+            <option value="boy">בן</option>
+          </select>
         </div>
         <div class="field">
           <label for="kupa">קופת חולים (ביטוח משלים)</label>
@@ -292,7 +385,17 @@ body{background:linear-gradient(180deg,var(--accent-soft) 0,var(--bg) 320px) no-
     <p class="sync" id="sync"></p>
   </section>
 
+  <section id="shopView" class="hidden">
+    <div id="shopBody"></div>
+  </section>
+
   <section id="familyView" class="hidden">
+    <div class="panel">
+      <h2>צבעי האתר</h2>
+      <p>הבחירה נשמרת רק אצלך. בן/בת הזוג יכולים לבחור צבעים אחרים.</p>
+      <div class="swatches" id="swatches" role="group" aria-label="צבעי האתר"></div>
+    </div>
+
     <div class="panel">
       <h2>שם המשפחה</h2>
       <form class="fname" id="fnameForm">
@@ -338,6 +441,8 @@ body{background:linear-gradient(180deg,var(--accent-soft) 0,var(--bg) 320px) no-
   </section>
 </div>
 </div>
+<dialog id="dlg" aria-label="עריכה"></dialog>
+<div class="toast hidden" id="toast" role="status"></div>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-app.js";
@@ -348,7 +453,7 @@ import {
 } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-auth.js";
 import {
   initializeFirestore, doc, getDoc, setDoc, updateDoc, deleteDoc, collection, query, where,
-  onSnapshot, serverTimestamp, deleteField, arrayUnion
+  onSnapshot, serverTimestamp, deleteField, arrayUnion, writeBatch
 } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -519,7 +624,7 @@ function show(name){ SCREENS.forEach(s => $(s).classList.toggle("hidden", s!==na
 // ───────────── state ─────────────
 let me = null;            // users/{uid} doc
 let family = null;        // families/{fid} doc
-const state = { mode:"lmp", date:"", kupa:"", done:{}, custom:[], filter:"all", openOnly:false };
+const state = { mode:"lmp", date:"", kupa:"", babyName:"", babySex:"", done:{}, custom:[], overrides:{}, shop:{cats:[],prods:[],opts:[]}, filter:"all", openOnly:false };
 const expanded = new Set();
 let addingWeek = null;
 let unsubs = [];
@@ -674,6 +779,7 @@ $("logoutBtn").onclick = () => signOut(auth);
 // ───────────── live data ─────────────
 async function startApp(){
   bootStep = "family";
+  applyPalette(me.palette || localPalette());
   const fid = me.familyId;
   let gotFamily = false, gotSettings = false;
   const ready = () => { if (gotFamily && gotSettings) { clearTimeout(bootTimer); if ($("app").classList.contains("hidden")) { show("app"); scrollToCurrent(); } } };
@@ -686,7 +792,10 @@ async function startApp(){
   unsubs.push(onSnapshot(doc(db, "families", fid, "data", "settings"), s => {
     const d = s.exists() ? s.data() : {};
     state.mode = d.mode||"lmp"; state.date = d.date||""; state.kupa = d.kupa||"";
+    state.babyName = d.babyName||""; state.babySex = d.babySex||"";
     if (document.activeElement !== $("dateInput")) $("dateInput").value = state.date;
+    if (document.activeElement !== $("babyName")) $("babyName").value = state.babyName;
+    $("babySex").value = state.babySex;
     $("kupa").value = state.kupa; syncMode();
     gotSettings = true; rerender(); ready();
   }, e => bootFail(e.code||e.message)));
@@ -695,6 +804,19 @@ async function startApp(){
     state.done = (s.exists() && s.data().items) || {};
     rerender();
   }, e => setSync("לא הצלחתי לטעון סימונים: " + (e.code||e.message))));
+
+  unsubs.push(onSnapshot(doc(db, "families", fid, "data", "overrides"), s => {
+    state.overrides = (s.exists() && s.data().items) || {};
+    rerender();
+  }, e => setSync("לא הצלחתי לטעון עריכות: " + (e.code||e.message))));
+
+  const byTime = (a,b) => (a.createdAt||0) - (b.createdAt||0);
+  [["shopCats","cats"],["shopProds","prods"],["shopOpts","opts"]].forEach(([coll,key]) => {
+    unsubs.push(onSnapshot(collection(db, "families", fid, coll), s => {
+      state.shop[key] = s.docs.map(d => ({ id: d.id, ...d.data() })).sort(byTime);
+      rerender();
+    }, e => setSync("לא הצלחתי לטעון את הקניות: " + (e.code||e.message))));
+  });
 
   unsubs.push(onSnapshot(collection(db, "families", fid, "tasks"), s => {
     state.custom = s.docs.map(d => ({ id: d.id, ...d.data() })).sort((a,b)=>(a.createdAt||0)-(b.createdAt||0));
@@ -709,13 +831,15 @@ async function startApp(){
 }
 
 function setSync(t){ $("sync").textContent = t; }
+let toastTimer = null;
+function toast(msg){ const t=$("toast"); t.textContent=msg; t.classList.remove("hidden"); clearTimeout(toastTimer); toastTimer=setTimeout(()=>t.classList.add("hidden"),5000); }
 async function write(fn){
   try { await fn(); setSync("הכול נשמר ומסונכרן עם בני המשפחה."); }
-  catch(e){ console.error(e); setSync("השמירה נכשלה (" + (e.code||e.message) + "). בדקי את החיבור ונסי שוב."); }
+  catch(e){ console.error(e); const m="השמירה נכשלה (" + (e.code||e.message) + "). בדקי את החיבור ונסי שוב."; setSync(m); toast(m); }
 }
 function saveSettings(){
   const fid = me.familyId;
-  write(() => setDoc(doc(db, "families", fid, "data", "settings"), { mode: state.mode, date: state.date, kupa: state.kupa, updatedAt: Date.now() }, { merge: true }));
+  write(() => setDoc(doc(db, "families", fid, "data", "settings"), { mode: state.mode, date: state.date, kupa: state.kupa, babyName: state.babyName, babySex: state.babySex, updatedAt: Date.now() }, { merge: true }));
 }
 function setDone(id, on){
   const fid = me.familyId;
@@ -763,14 +887,56 @@ document.querySelectorAll(".tabs button").forEach(b => b.onclick = () => setView
 function setView(v){
   document.querySelectorAll(".tabs button").forEach(b => { if (b.dataset.view===v) b.setAttribute("aria-current","page"); else b.removeAttribute("aria-current"); });
   $("listView").classList.toggle("hidden", v!=="list");
+  $("shopView").classList.toggle("hidden", v!=="shop");
   $("familyView").classList.toggle("hidden", v!=="family");
   window.scrollTo(0,0);
 }
 
+// ───────────── palettes (per person) ─────────────
+const PALETTES = [
+  {k:"pink", n:"ורוד", c:"#f2a5c0"}, {k:"blue", n:"תכלת", c:"#9cc8f2"}, {k:"green", n:"ירוק", c:"#9bd9b4"},
+  {k:"lavender", n:"לבנדר", c:"#c6b0ec"}, {k:"peach", n:"אפרסק", c:"#f5be94"}, {k:"neutral", n:"ניטרלי", c:"#b9c4d4"}
+];
+function localPalette(){ try{ return localStorage.getItem("preg:palette") || "pink"; }catch(e){ return "pink"; } }
+function applyPalette(k){
+  if (!PALETTES.some(p=>p.k===k)) k = "pink";
+  document.documentElement.setAttribute("data-palette", k);
+  try{ localStorage.setItem("preg:palette", k); }catch(e){}
+  renderSwatches(k);
+}
+function renderSwatches(cur){
+  cur = cur || document.documentElement.getAttribute("data-palette") || "pink";
+  $("swatches").innerHTML = PALETTES.map(p => `<button type="button" class="swb" data-pal="${p.k}" aria-pressed="${p.k===cur}"><i style="--c:${p.c}"></i>${p.n}</button>`).join("");
+}
+
+// ───────────── generic dialog ─────────────
+function openDlg({ html, onSave, onDelete, delLabel }){
+  const dlg = $("dlg");
+  dlg.innerHTML = `<form class="dlgform" id="dlgForm">${html}
+    <div class="acts"><button class="btn" type="submit">שמירה</button><button class="btn ghost" type="button" data-close>ביטול</button></div>
+    ${onDelete ? `<button class="del" type="button" data-dlgdel>${delLabel||"מחיקה"}</button>` : ""}</form>`;
+  const f = $("dlgForm");
+  f.onsubmit = async ev => { ev.preventDefault(); const fd = Object.fromEntries(new FormData(f)); dlg.close(); await onSave(fd); };
+  f.querySelector("[data-close]").onclick = () => dlg.close();
+  const del = f.querySelector("[data-dlgdel]");
+  if (del) del.onclick = async () => {
+    if (del.dataset.c !== "1") { del.dataset.c = "1"; del.textContent = "ללחוץ שוב כדי למחוק"; return; }
+    dlg.close(); await onDelete();
+  };
+  dlg.showModal();
+  const first = f.querySelector("input:not([type=checkbox]),textarea"); if (first) first.focus();
+}
+$("dlg").addEventListener("click", e => { if (e.target === $("dlg")) $("dlg").close(); });
+const optsRange = (from, to, cur, fmt) => Array.from({length: to-from+1}, (_,i)=>from+i).map(n => `<option value="${n}" ${String(cur)===String(n)?"selected":""}>${fmt(n)}</option>`).join("");
+
 // ───────────── checklist ─────────────
-function allItems(){ return ITEMS.concat(state.custom.map(c=>({...c, type:"custom"}))); }
-const byId = Object.fromEntries(ITEMS.map(i=>[i.id,i]));
-const bookingsFor = {}; ITEMS.forEach(i=>{ if(i.forId){ (bookingsFor[i.forId] ||= []).push(i); } });
+let MI = [], MBY = {}, BOOKS = {};
+function buildIndex(){
+  MI = ITEMS.map(i => { const o = state.overrides[i.id]; return o ? { ...i, ...o, _edited:true } : i; })
+    .concat(state.custom.map(c => ({ ...c, type:"custom" })));
+  MBY = Object.fromEntries(MI.map(i => [i.id, i]));
+  BOOKS = {}; MI.forEach(i => { if (i.forId) (BOOKS[i.forId] ||= []).push(i); });
+}
 
 function lmpDate(){
   if(!state.date) return null;
@@ -782,6 +948,10 @@ function today(){ const n=new Date(); return new Date(n.getFullYear(),n.getMonth
 function ga(){ const l=lmpDate(); if(!l) return null; const days=Math.round((today()-l)/MS_DAY); return {w:Math.floor(days/7), d:days%7, days}; }
 const fmt = new Intl.DateTimeFormat("he-IL",{day:"numeric",month:"short"});
 function weekRange(w){ const l=lmpDate(); if(!l) return ""; const s=new Date(l.getTime()+w*7*MS_DAY), e=new Date(s.getTime()+6*MS_DAY); return fmt.format(s)+" – "+fmt.format(e); }
+function babyLabel(){
+  const base = state.babySex==="girl" ? "התינוקת" : state.babySex==="boy" ? "התינוק" : "";
+  return [base, (state.babyName||"").trim()].filter(Boolean).join(" ");
+}
 
 function costTags(it){
   const k = KUPOT[state.kupa];
@@ -811,11 +981,12 @@ function winTag(it){
 }
 function linkedLine(it){
   if(it.type==="book" && it.link){
-    const target = byId[it.forId];
-    const lbl = it.link===43 ? "אחרי הלידה" : "שבוע "+it.link;
-    return `<div class="linked">התור עצמו מופיע ב<button class="link" data-jump="${it.link}">${lbl}${target? ": "+target.t:""}</button></div>`;
+    const target = MBY[it.forId];
+    const lw = target ? target.w : it.link;
+    const lbl = lw===43 ? "אחרי הלידה" : "שבוע "+lw;
+    return `<div class="linked">התור עצמו מופיע ב<button class="link" data-jump="${lw}">${lbl}${target? ": "+esc(target.t):""}</button></div>`;
   }
-  const bs = bookingsFor[it.id];
+  const bs = BOOKS[it.id];
   if(bs && bs.length){
     const b=bs[0];
     if(state.done[b.id]) return `<div class="linked ok">✓ סומן שנקבע תור (בשבוע ${b.w})</div>`;
@@ -829,19 +1000,20 @@ function itemHTML(it, reminder){
   const key = it.id + (reminder ? "@"+reminder : "");
   const open = expanded.has(key);
   const isCustom = it.type==="custom";
-  let d = isCustom ? esc(it.d||"") : it.d;
+  let d = esc(it.d||"");
   if(it.meuhedetNote && state.kupa==="meuhedet") d += " <b>"+it.meuhedetNote+"</b>";
   const cid = "c-"+key.replace("@","-r");
-  const title = isCustom ? esc(it.t) : it.t;
+  const title = esc(it.t);
   const dc = dotClass(it);
   const who = [];
   if (isCustom && it.by) who.push(`נוספה ע״י ${esc(firstName(it.by))}`);
   if (done && doneRec.by) who.push(`סומנה ע״י ${esc(firstName(doneRec.by))}`);
+  const actions = `<div class="acts2"><button class="link" data-edit="${esc(it.id)}">עריכה</button>${it._edited?`<button class="link" data-reset="${esc(it.id)}">שחזור למקור</button>`:""}${isCustom?`<button class="del" data-del="${esc(it.id)}">מחיקת המשימה</button>`:""}</div>`;
   const body = reminder
     ? `<div class="d">החלון נסגר בשבוע ${it.end}. הפרטים המלאים מופיעים ב<button class="link" data-jump="${it.w}">שבוע ${it.w}</button>.</div>`
-    : `${d?`<div class="d">${d}</div>`:""}<div class="tags">${typeTag(it)}${winTag(it)}${costTags(it)}</div>${linkedLine(it)}${who.length?`<div class="by">${who.join(" · ")}</div>`:""}${isCustom?`<button class="del" data-del="${esc(it.id)}">מחיקת המשימה</button>`:""}`;
+    : `${d?`<div class="d">${d}</div>`:""}<div class="tags">${typeTag(it)}${winTag(it)}${costTags(it)}</div>${linkedLine(it)}${who.length?`<div class="by">${who.join(" · ")}</div>`:""}${actions}`;
   return `<li class="item${done?" done":""}${reminder?" reminder":""}">
-    <input type="checkbox" id="${cid}" data-id="${esc(it.id)}" ${done?"checked":""} aria-label="${String(title).replace(/"/g,"&quot;")}">
+    <input type="checkbox" id="${cid}" data-id="${esc(it.id)}" ${done?"checked":""} aria-label="${title}">
     <button class="row" type="button" data-key="${esc(key)}" aria-expanded="${open}" aria-controls="m-${cid}">
       <span class="t">${title}</span>${dc?`<span class="dot ${dc}" aria-hidden="true"></span>`:""}<span class="chev" aria-hidden="true">▾</span>
     </button>
@@ -862,14 +1034,14 @@ function addHTML(w){
 }
 
 function render(){
+  buildIndex();
   const g = ga();
   const cur = g ? Math.min(Math.max(g.w,WEEK_MIN),42) : null;
-  const all = allItems();
   let html="", lastTri=0;
   for(let w=WEEK_MIN; w<=WEEK_MAX; w++){
     const tri=trimester(w);
-    let items = all.filter(i=>i.w===w);
-    let reminders = ITEMS.filter(i=>i.type==="test" && i.end && w>i.w && w<=i.end && !state.done[i.id]);
+    let items = MI.filter(i=>i.w===w);
+    let reminders = MI.filter(i=>i.type==="test" && i.end && w>i.w && w<=i.end && !state.done[i.id]);
     const visible = it => (state.filter==="all" || it.type===state.filter) && (!state.openOnly || !state.done[it.id]);
     items = items.filter(visible); reminders = reminders.filter(visible);
     const filtering = state.filter!=="all" || state.openOnly;
@@ -891,7 +1063,8 @@ function render(){
     const l=lmpDate(), edd=new Date(l.getTime()+280*MS_DAY);
     const left = Math.round((edd-today())/MS_DAY);
     const tri = g.w<=13?"שליש ראשון": g.w<=27?"שליש שני":"שליש שלישי";
-    now.innerHTML = `<span class="wk">שבוע ${g.w}<span>+${g.d}</span></span><span class="nowmeta"><b>${tri}</b>לידה משוערת ${new Intl.DateTimeFormat("he-IL",{day:"numeric",month:"short",year:"numeric"}).format(edd)}${left>0?` · עוד ${left} ימים`:""}</span>`;
+    const bl = babyLabel();
+    now.innerHTML = `<span class="wk">שבוע ${g.w}<span>+${g.d}</span></span><span class="nowmeta"><b>${tri}${bl?" · "+esc(bl):""}</b>לידה משוערת ${new Intl.DateTimeFormat("he-IL",{day:"numeric",month:"short",year:"numeric"}).format(edd)}${left>0?` · עוד ${left} ימים`:""}</span>`;
     bar.style.width = Math.min(100, g.days/280*100)+"%";
   } else {
     now.innerHTML = `<span class="wk">שבוע ?</span><span class="nowmeta">${g?"התאריך עוד לא הגיע":"הזיני תאריך למטה"}</span>`;
@@ -905,13 +1078,20 @@ function render(){
     <li>סל ההריון כלול רק ב<b>רובד העליון</b>, ויש <b>6 חודשי המתנה</b> מיום ההצטרפות אליו.</li>
     <li>ביטוח בריאות פרטי שנעשה לפני חודשיים לא מכסה את ההריון הזה, ולכן הוא לא מופיע כאן. ההחזרים מהקופה לא קשורים אליו.</li>
     <li>שמרי קבלות על שמך המלא. אפשר להגיש עד 6 חודשים אחרי הלידה.</li></ul>`;
+  renderShop();
 }
-function rerender(){ const y=window.scrollY; render(); window.scrollTo(0,y); }
+function rerender(){
+  const y = window.scrollY;
+  let keep = null;
+  if (addingWeek !== null) { const f = document.querySelector("form[data-form]"); if (f) keep = { t: f.elements.t.value, d: f.elements.d.value }; }
+  render();
+  if (keep) { const f = document.querySelector("form[data-form]"); if (f) { f.elements.t.value = keep.t; f.elements.d.value = keep.d; } }
+  window.scrollTo(0, y);
+}
 function scrollToCurrent(){
   const g=ga(); if(!(g && g.days>=0 && g.w>WEEK_MIN)) return;
   setTimeout(()=>{ const t=$("w"+Math.min(g.w,42)); if(t) t.scrollIntoView({block:"start", behavior:"auto"}); },60);
 }
-
 function jump(w){
   setView("list");
   if(!$("w"+w)){ state.filter="all"; state.openOnly=false; syncChips(); render(); }
@@ -927,11 +1107,203 @@ function syncMode(){
   $("dateLabel").textContent = state.mode==="lmp" ? "תאריך הווסת האחרונה" : "תאריך לידה משוער";
 }
 
+// edit a task (built-in tasks keep their original; edits live in an overrides document)
+function editTask(id){
+  const it = MBY[id]; if (!it) return;
+  const fid = me.familyId, custom = it.type==="custom";
+  openDlg({
+    html: `<h2>עריכת משימה</h2>
+      <label>שם המשימה<input name="t" required maxlength="140" value="${esc(it.t)}"></label>
+      <label>פרטים<textarea name="d" maxlength="1000">${esc(it.d||"")}</textarea></label>
+      <label>שבוע<select name="w">${optsRange(WEEK_MIN, 43, it.w, n => n===43 ? "אחרי הלידה" : "שבוע "+n)}</select></label>`,
+    onSave: fd => {
+      const v = { t: fd.t.trim() || it.t, d: (fd.d||"").trim(), w: Number(fd.w) };
+      return write(() => custom
+        ? updateDoc(doc(db, "families", fid, "tasks", id), v)
+        : setDoc(doc(db, "families", fid, "data", "overrides"), { items: { [id]: v } }, { merge: true }));
+    }
+  });
+}
+
+// ───────────── shopping ─────────────
+const STORES = ["שילב","מוצצים","מיננה","שיין","אלי אקספרס","בייבי סטאר","עגליס"];
+const DEFAULT_CATS = ["עגלה וטיולים","כיסא בטיחות ורכב","שינה","האכלה והנקה","רחצה והחתלה","ביגוד","בית חולים ולידה","בטיחות ובית","משחקים והתפתחות"];
+const DEC = { none:"טרם הוחלט", no:"לא לקנות", maybe:"כנראה אקנה", final:"סופי" };
+const PAYMENTS = ["אשראי","מזומן","ביט","פייבוקס","תשלומים","שובר / מתנה"];
+const money = n => new Intl.NumberFormat("he-IL",{maximumFractionDigits:2}).format(n) + " ₪";
+const whenLabel = w => w==="after" ? "אחרי הלידה" : (w ? "שבוע "+w : "");
+const decTag = d => d==="final" ? `<span class="tag final">סופי</span>` : d==="maybe" ? `<span class="tag maybe">כנראה</span>` : "";
+
+function prodHTML(p){
+  const os = state.shop.opts.filter(o=>o.pid===p.id);
+  const key = "p:"+p.id, open = expanded.has(key);
+  const hasFinal = os.some(o=>o.decision==="final"), hasMaybe = os.some(o=>o.decision==="maybe");
+  const g = ga();
+  const due = !hasFinal && Number.isFinite(p.when) && g && g.days>=0 && g.w>=p.when;
+  const priced = os.filter(o=>o.price>0);
+  const min = priced.length>1 ? Math.min(...priced.map(o=>o.price)) : null;
+  const rows = os.map(o => `<tr>
+    <td><b>${esc(o.company)}</b> ${esc(o.model)}${o.notes?`<span class="mini">${esc(o.notes)}</span>`:""}</td>
+    <td>${esc(o.color)}</td>
+    <td class="num">${o.price>0?money(o.price):"—"}${min!==null && o.price===min?'<span class="tag final">הכי זול</span>':""}</td>
+    <td>${esc(o.store||"—")}${o.eilat?'<span class="tag eilat">אילת</span>':""}</td>
+    <td>${esc(o.payment)}</td>
+    <td><select class="dsel" data-dec="${esc(o.id)}" aria-label="החלטה">${Object.entries(DEC).map(([k,v])=>`<option value="${k}" ${(o.decision||"none")===k?"selected":""}>${v}</option>`).join("")}</select></td>
+    <td><button class="link" data-shop="edit-opt" data-id="${esc(o.id)}">עריכה</button></td></tr>`).join("");
+  const wl = whenLabel(p.when);
+  return `<li class="prod">
+    <button class="row" type="button" data-key="${esc(key)}" aria-expanded="${open}" aria-controls="m-${esc(key)}">
+      <span class="t">${esc(p.name)}<span class="mini">${os.length} אפשרויות${wl?" · לקנות: "+wl:""}</span></span>
+      ${hasFinal?decTag("final"):hasMaybe?decTag("maybe"):""}${due?'<span class="tag private">הגיע הזמן</span>':""}<span class="chev" aria-hidden="true">▾</span>
+    </button>
+    <div class="more" id="m-${esc(key)}" ${open?"":"hidden"}>
+      ${os.length?`<div class="tbl"><table><thead><tr><th>חברה ודגם</th><th>צבע</th><th>מחיר</th><th>חנות</th><th>תשלום</th><th>החלטה</th><th></th></tr></thead><tbody>${rows}</tbody></table></div>`:`<p class="hint">עוד אין אפשרויות להשוואה. אפשר להוסיף חברה, דגם ומחיר.</p>`}
+      <div class="acts2"><button class="btn" type="button" data-shop="add-opt" data-id="${esc(p.id)}">+ אפשרות להשוואה</button><button class="link" data-shop="edit-prod" data-id="${esc(p.id)}">עריכת המוצר</button></div>
+    </div></li>`;
+}
+
+function renderShop(){
+  const { cats, prods, opts } = state.shop;
+  const catIdx = Object.fromEntries(cats.map((c,i)=>[c.id,i]));
+  const ps = prods.filter(p=>catIdx[p.cat]!==undefined).sort((a,b)=>catIdx[a.cat]-catIdx[b.cat] || (a.createdAt||0)-(b.createdAt||0));
+  const pIdx = Object.fromEntries(ps.map((p,i)=>[p.id,i]));
+  const pBy = Object.fromEntries(ps.map(p=>[p.id,p]));
+  const inc = opts.filter(o=>pBy[o.pid] && (o.decision==="maybe"||o.decision==="final"))
+    .sort((a,b)=>pIdx[a.pid]-pIdx[b.pid] || (a.createdAt||0)-(b.createdAt||0));
+  const sum = a => a.reduce((s,o)=>s+(o.price>0?o.price:0),0);
+  const total = sum(inc), fin = sum(inc.filter(o=>o.decision==="final")), eil = sum(inc.filter(o=>o.eilat));
+  const noPrice = inc.filter(o=>!(o.price>0)).length;
+
+  const tiles = `<div class="tiles">
+    <div class="tile main"><small>סה״כ מתוכנן</small><b>${money(total)}</b></div>
+    <div class="tile"><small>סופי</small><b>${money(fin)}</b></div>
+    <div class="tile"><small>כנראה</small><b>${money(total-fin)}</b></div>
+    <div class="tile"><small>מתוכם באילת</small><b>${money(eil)}</b></div></div>
+    ${noPrice?`<p class="hint">ל־${noPrice} פריטים עדיין אין מחיר, ולכן הם לא נכללים בסכום.</p>`:""}`;
+
+  const names = STORES.concat([...new Set(inc.map(o=>o.store||"ללא חנות"))].filter(s=>!STORES.includes(s)));
+  const stores = names.map(sn => {
+    const rows = inc.filter(o=>(o.store||"ללא חנות")===sn);
+    const rowsHTML = rows.map(o => `<tr>
+      <td>${esc(pBy[o.pid].name)}${decTag(o.decision)}${o.eilat?'<span class="tag eilat">אילת</span>':""}</td>
+      <td>${[o.company,o.model].filter(Boolean).map(esc).join(" ")}</td>
+      <td>${esc(o.color)}</td><td>${esc(o.notes)}</td>
+      <td class="num">${o.price>0?money(o.price):"—"}</td><td>${esc(o.payment)}</td></tr>`).join("");
+    return `<section class="store"><h3>${esc(sn)}<span>${rows.length?rows.length+" פריטים · ":""}<b>${money(sum(rows))}</b></span></h3>
+      ${rows.length?`<div class="tbl"><table><thead><tr><th>מוצר</th><th>דגם</th><th>צבע</th><th>הערות</th><th>מחיר</th><th>תשלום</th></tr></thead><tbody>${rowsHTML}</tbody></table></div>`:`<div class="empty">עוד אין פריטים מהחנות הזו.</div>`}</section>`;
+  }).join("");
+
+  const catsHTML = cats.length ? cats.map(c => {
+    const cp = ps.filter(p=>p.cat===c.id);
+    return `<section class="cat"><div class="cathead"><h3>${esc(c.name)}</h3><button class="link" data-shop="edit-cat" data-id="${esc(c.id)}">עריכה</button></div>
+      ${cp.length?`<ul class="prods">${cp.map(prodHTML).join("")}</ul>`:`<div class="empty">עוד אין מוצרים בקטגוריה.</div>`}
+      <button class="addbtn" type="button" data-shop="add-prod" data-id="${esc(c.id)}">+ הוספת מוצר</button></section>`;
+  }).join("")
+  : `<div class="panel"><p>עוד אין קטגוריות. אפשר להתחיל מרשימה מוכנה ולערוך אותה אחר כך.</p><button class="btn" type="button" data-shop="seed">הוספת קטגוריות מוכנות</button></div>`;
+
+  $("shopBody").innerHTML = `${tiles}
+    <h2 class="sh2">מה קונים ואיפה</h2>${stores}
+    <div class="sh2"><span>ציוד לפי קטגוריות</span><button class="btn" type="button" data-shop="add-cat">+ קטגוריה</button></div>${catsHTML}`;
+}
+
+function shopAction(a, id){
+  const fid = me.familyId, col = n => collection(db, "families", fid, n), ref = (n, i) => doc(db, "families", fid, n, i);
+  const sh = state.shop;
+  if (a === "seed") {
+    const b = writeBatch(db);
+    DEFAULT_CATS.forEach((n,i) => b.set(ref("shopCats", "c"+uid()+i), { name:n, createdAt: Date.now()+i }));
+    return write(() => b.commit());
+  }
+  if (a === "add-cat" || a === "edit-cat") {
+    const c = a==="edit-cat" ? sh.cats.find(x=>x.id===id) : null;
+    return openDlg({
+      html: `<h2>${c?"עריכת קטגוריה":"קטגוריה חדשה"}</h2><label>שם הקטגוריה<input name="name" required maxlength="60" value="${esc(c?.name)}"></label>`,
+      onSave: fd => write(() => c ? updateDoc(ref("shopCats", c.id), { name: fd.name.trim() }) : setDoc(ref("shopCats", "c"+uid()), { name: fd.name.trim(), createdAt: Date.now() })),
+      onDelete: c ? () => write(async () => {
+        const b = writeBatch(db);
+        const pids = sh.prods.filter(p=>p.cat===c.id).map(p=>p.id);
+        sh.opts.filter(o=>pids.includes(o.pid)).forEach(o => b.delete(ref("shopOpts", o.id)));
+        pids.forEach(p => b.delete(ref("shopProds", p)));
+        b.delete(ref("shopCats", c.id)); await b.commit();
+      }) : null,
+      delLabel: "מחיקת הקטגוריה (כולל המוצרים שבה)"
+    });
+  }
+  if (a === "add-prod" || a === "edit-prod") {
+    const p = a==="edit-prod" ? sh.prods.find(x=>x.id===id) : null;
+    const catId = p ? p.cat : id;
+    return openDlg({
+      html: `<h2>${p?"עריכת מוצר":"מוצר חדש"}</h2>
+        <label>שם המוצר<input name="name" required maxlength="80" placeholder="למשל: עגלה" value="${esc(p?.name)}"></label>
+        <label>קטגוריה<select name="cat">${sh.cats.map(c=>`<option value="${esc(c.id)}" ${c.id===catId?"selected":""}>${esc(c.name)}</option>`).join("")}</select></label>
+        <label>מתי לקנות<select name="when"><option value="">לא נקבע</option>${optsRange(WEEK_MIN,42,p?.when,n=>"שבוע "+n)}<option value="after" ${p?.when==="after"?"selected":""}>אחרי הלידה</option></select></label>`,
+      onSave: fd => {
+        const w = fd.when==="after" ? "after" : fd.when ? Number(fd.when) : "";
+        const v = { name: fd.name.trim(), cat: fd.cat, when: w };
+        return write(() => p ? updateDoc(ref("shopProds", p.id), v) : setDoc(ref("shopProds", "p"+uid()), { ...v, createdAt: Date.now() }));
+      },
+      onDelete: p ? () => write(async () => {
+        const b = writeBatch(db);
+        sh.opts.filter(o=>o.pid===p.id).forEach(o => b.delete(ref("shopOpts", o.id)));
+        b.delete(ref("shopProds", p.id)); await b.commit();
+      }) : null,
+      delLabel: "מחיקת המוצר (כולל האפשרויות)"
+    });
+  }
+  if (a === "add-opt" || a === "edit-opt") {
+    const o = a==="edit-opt" ? sh.opts.find(x=>x.id===id) : null;
+    const pid = o ? o.pid : id;
+    const prod = sh.prods.find(p=>p.id===pid);
+    const inList = !o?.store || STORES.includes(o.store);
+    return openDlg({
+      html: `<h2>${o?"עריכת אפשרות":"אפשרות להשוואה"}${prod?` · ${esc(prod.name)}`:""}</h2>
+        <div class="grid2">
+          <label>חברה<input name="company" maxlength="60" value="${esc(o?.company)}"></label>
+          <label>דגם<input name="model" maxlength="60" value="${esc(o?.model)}"></label>
+        </div>
+        <div class="grid2">
+          <label>צבע<input name="color" maxlength="40" value="${esc(o?.color)}"></label>
+          <label>מחיר (₪)<input name="price" type="number" min="0" step="any" inputmode="decimal" value="${o?.price>0?o.price:""}"></label>
+        </div>
+        <label>חנות<select name="storeSel" id="optStore"><option value="">לא נבחרה</option>${STORES.map(s=>`<option ${o?.store===s?"selected":""}>${esc(s)}</option>`).join("")}<option value="__other" ${inList?"":"selected"}>אחרת…</option></select></label>
+        <label id="optOtherL" class="${inList?"hidden":""}">שם החנות<input name="storeOther" maxlength="60" value="${inList?"":esc(o?.store)}"></label>
+        <label class="chk"><input type="checkbox" name="eilat" ${o?.eilat?"checked":""}> אקנה באילת</label>
+        <label>אופן תשלום<input name="payment" list="payList" maxlength="60" value="${esc(o?.payment)}"></label>
+        <datalist id="payList">${PAYMENTS.map(p=>`<option value="${p}"></option>`).join("")}</datalist>
+        <label>החלטה<select name="decision">${Object.entries(DEC).map(([k,v])=>`<option value="${k}" ${(o?.decision||"none")===k?"selected":""}>${v}</option>`).join("")}</select></label>
+        <label>הערות<textarea name="notes" maxlength="600">${esc(o?.notes)}</textarea></label>`,
+      onSave: fd => {
+        const v = {
+          pid, company: (fd.company||"").trim(), model: (fd.model||"").trim(), color: (fd.color||"").trim(),
+          price: fd.price===""||fd.price==null ? null : Number(fd.price),
+          store: (fd.storeSel==="__other" ? fd.storeOther||"" : fd.storeSel||"").trim(),
+          eilat: !!fd.eilat, payment: (fd.payment||"").trim(), decision: fd.decision||"none", notes: (fd.notes||"").trim()
+        };
+        return write(() => o ? updateDoc(ref("shopOpts", o.id), v) : setDoc(ref("shopOpts", "o"+uid()), { ...v, createdAt: Date.now() }));
+      },
+      onDelete: o ? () => write(() => deleteDoc(ref("shopOpts", o.id))) : null,
+      delLabel: "מחיקת האפשרות"
+    });
+  }
+}
+document.addEventListener("change", e => {
+  if (e.target.id === "optStore") $("optOtherL").classList.toggle("hidden", e.target.value !== "__other");
+  const s = e.target.closest("select[data-dec]");
+  if (s) write(() => updateDoc(doc(db, "families", me.familyId, "shopOpts", s.dataset.dec), { decision: s.value }));
+});
+
+// ───────────── events ─────────────
 document.addEventListener("change", e=>{
   if(e.target.matches('input[type=checkbox][data-id]')) setDone(e.target.dataset.id, e.target.checked);
 });
 document.addEventListener("click", e=>{
   const j=e.target.closest("[data-jump]"); if(j){ jump(+j.dataset.jump); return; }
+  const sw=e.target.closest("[data-pal]");
+  if(sw){ applyPalette(sw.dataset.pal); write(()=>updateDoc(doc(db,"users",me.id),{palette:sw.dataset.pal})); return; }
+  const sh=e.target.closest("[data-shop]"); if(sh){ shopAction(sh.dataset.shop, sh.dataset.id); return; }
+  const ed=e.target.closest("[data-edit]"); if(ed){ editTask(ed.dataset.edit); return; }
+  const rs=e.target.closest("[data-reset]");
+  if(rs){ write(()=>setDoc(doc(db,"families",me.familyId,"data","overrides"),{items:{[rs.dataset.reset]:deleteField()}},{merge:true})); return; }
   const r=e.target.closest(".row[data-key]");
   if(r){
     const key=r.dataset.key, open=r.getAttribute("aria-expanded")!=="true";
@@ -966,9 +1338,10 @@ $("openOnly").onclick=()=>{ state.openOnly=!state.openOnly; syncChips(); render(
 $("jumpBtn").onclick=()=>{ const g=ga(); if(g && g.days>=0) jump(Math.min(Math.max(g.w,WEEK_MIN),42)); else { setView("list"); $("dateInput").focus(); } };
 $("dateInput").addEventListener("change",()=>{ state.date=$("dateInput").value; saveSettings(); render(); });
 $("kupa").addEventListener("change",()=>{ state.kupa=$("kupa").value; saveSettings(); render(); });
+$("babyName").addEventListener("change",()=>{ state.babyName=$("babyName").value.trim(); saveSettings(); render(); });
+$("babySex").addEventListener("change",()=>{ state.babySex=$("babySex").value; saveSettings(); render(); });
 $("modeLmp").onclick=()=>{ state.mode="lmp"; syncMode(); saveSettings(); render(); };
 $("modeEdd").onclick=()=>{ state.mode="edd"; syncMode(); saveSettings(); render(); };
-
 </script>
 </body>
 </html>

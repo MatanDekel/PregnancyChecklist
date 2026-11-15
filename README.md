@@ -12,6 +12,9 @@
 - `families/{fid}/data/settings`: mode, date, kupa
 - `families/{fid}/data/done`: items.{taskId} = { by, at }
 - `families/{fid}/tasks/{id}`: w, t, d, by
+- `families/{fid}/data/overrides`: items.{taskId} = { t, d, w } (עריכות של משימות מובנות)
+- `families/{fid}/shopCats|shopProds|shopOpts`: קטגוריות, מוצרים (name, cat, when) ואפשרויות להשוואה (pid, company, model, color, price, store, eilat, payment, decision, notes)
+- `users/{uid}.palette`: ערכת הצבעים של כל אחד/ת
 - `invites/{email}`: familyId, invitedBy
 
 ## הגדרות ב-Firebase
